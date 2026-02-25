@@ -1,0 +1,28 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Bin {
+  id          String    @id
+  col         String
+  layer       Int
+  row         Int
+  sku         String?
+  quantity    Int       @default(0)
+  inboundTime DateTime? @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([col, row, layer])
+}
+
+model Product {
+  sku         String  @id
+  name        String?
+  description String?
+  category    String?
+}

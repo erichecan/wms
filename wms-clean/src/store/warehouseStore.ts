@@ -39,7 +39,8 @@ export interface WarehouseState {
     aisles: LayoutAisle[];
 
     // Actions
-    initializeMockData: () => void;
+    fetchBins: () => Promise<void>;
+    initializeMockData: () => Promise<void>;
     selectBin: (id: string) => void;
     toggleBinSelection: (id: string) => void;
     clearSelection: () => void;
@@ -49,6 +50,7 @@ export interface WarehouseState {
     addObstacle: (obstacle: LayoutObstacle) => void;
     updateAislePosition: (id: string, x: number, y: number) => void;
     updateObstaclePosition: (id: string, x: number, y: number) => void;
+    updateBin: (id: string, updates: Partial<Bin>) => void;
 }
 
 export const useWarehouseStore = create<WarehouseState>((set) => ({
@@ -66,32 +68,29 @@ export const useWarehouseStore = create<WarehouseState>((set) => ({
         { id: 'K4', x: 18, y: 2, width: 2, height: 10 }
     ],
 
-    initializeMockData: () => {
-        // Generate a simple mock grid for columns K1, K2, K3, K4
-        const cols = ["K1", "K2", "K3", "K4"];
-        const mockBins: Bin[] = [];
-
-        cols.forEach(col => {
-            // 10 rows deeper
-            for (let r = 1; r <= 10; r++) {
-                // 3 layers high
-                for (let l = 1; l <= 3; l++) {
-                    // Add some fake items randomly
-                    const hasItem = Math.random() > 0.6;
-                    mockBins.push({
-                        id: `${col}-L${l}-R${r}`,
-                        col,
-                        row: r,
-                        layer: l,
-                        sku: hasItem ? `SKU-A${Math.floor(Math.random() * 900) + 100}` : null,
-                        quantity: hasItem ? Math.floor(Math.random() * 50) + 1 : 0,
-                        inboundTime: hasItem ? new Date(Date.now() - Math.random() * 10000000000).toISOString() : null
-                    });
-                }
+    fetchBins: async () => {
+        try {
+            const res = await fetch("/api/bins");
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                set({ bins: data });
             }
-        });
+        } catch (error) {
+            console.error("Failed to fetch bins", error);
+        }
+    },
 
-        set({ bins: mockBins });
+    initializeMockData: async () => {
+        try {
+            await fetch("/api/seed", { method: "POST" });
+            const res = await fetch("/api/bins");
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                set({ bins: data });
+            }
+        } catch (error) {
+            console.error("Failed to initialize data", error);
+        }
     },
 
     selectBin: (id) => set({ selectedBinIds: [id] }),
@@ -105,26 +104,24 @@ export const useWarehouseStore = create<WarehouseState>((set) => ({
     clearSelection: () => set({ selectedBinIds: [] }),
 
     moveBinContents: (sourceIds, targetCol, targetRow, targetLayer) => set((state) => {
-        // Deep copy to avoid direct mutation
         const newBins = [...state.bins];
+        const targetBin = newBins.find(b => b.col === targetCol && b.row === targetRow && b.layer === targetLayer);
 
-        const targetBinIndex = newBins.findIndex(b => b.col === targetCol && b.row === targetRow && b.layer === targetLayer);
-
-        if (sourceIds.length === 1 && targetBinIndex !== -1) {
-            const sourceBinIndex = newBins.findIndex(b => b.id === sourceIds[0]);
-            if (sourceBinIndex !== -1) {
+        if (sourceIds.length === 1 && targetBin) {
+            const sourceBin = newBins.find(b => b.id === sourceIds[0]);
+            if (sourceBin) {
                 // swap contents
-                const tempSku = newBins[targetBinIndex].sku;
-                const tempQty = newBins[targetBinIndex].quantity;
-                const tempTime = newBins[targetBinIndex].inboundTime;
+                const tempSku = targetBin.sku;
+                const tempQty = targetBin.quantity;
+                const tempTime = targetBin.inboundTime;
 
-                newBins[targetBinIndex].sku = newBins[sourceBinIndex].sku;
-                newBins[targetBinIndex].quantity = newBins[sourceBinIndex].quantity;
-                newBins[targetBinIndex].inboundTime = newBins[sourceBinIndex].inboundTime;
+                targetBin.sku = sourceBin.sku;
+                targetBin.quantity = sourceBin.quantity;
+                targetBin.inboundTime = sourceBin.inboundTime;
 
-                newBins[sourceBinIndex].sku = tempSku;
-                newBins[sourceBinIndex].quantity = tempQty;
-                newBins[sourceBinIndex].inboundTime = tempTime;
+                sourceBin.sku = tempSku;
+                sourceBin.quantity = tempQty;
+                sourceBin.inboundTime = tempTime;
             }
         }
 
@@ -136,7 +133,22 @@ export const useWarehouseStore = create<WarehouseState>((set) => ({
     updateAislePosition: (id, x, y) => set((state) => ({
         aisles: state.aisles.map(a => a.id === id ? { ...a, x, y } : a)
     })),
-    updateObstaclePosition: (id, x, y) => set((state) => ({
+    updateObstaclePosition: (id: string, x: number, y: number) => set((state) => ({
         obstacles: state.obstacles.map(o => o.id === id ? { ...o, x, y } : o)
-    }))
+    })),
+    updateBin: async (id, updates) => {
+        // Optimistic update
+        set((state) => ({
+            bins: state.bins.map(b => b.id === id ? { ...b, ...updates } : b)
+        }));
+
+        try {
+            await fetch("/api/bins", {
+                method: "POST",
+                body: JSON.stringify({ id, updates })
+            });
+        } catch (error) {
+            console.error("Failed to update bin on backend", error);
+        }
+    }
 }));

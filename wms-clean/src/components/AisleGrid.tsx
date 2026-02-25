@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Bin } from "./Bin";
 import { useWarehouseStore } from "@/store/warehouseStore";
 import clsx from "clsx";
-import { DndContext, DragEndEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, type DragEndEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
 
 // We wrap the bin to make it draggable/droppable
@@ -130,17 +130,17 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
 
             <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
                 {/* Main visually transformable container */}
-                <div className="relative w-full overflow-hidden min-h-[600px] flex items-center justify-center bg-slate-100 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 perspective-1000">
+                <div className="relative w-full overflow-hidden min-h-[600px] flex items-center justify-center bg-slate-100 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 [perspective:2000px]">
 
                     <motion.div
                         layout
                         animate={{
-                            rotateX: is3D ? 60 : 0,
-                            rotateZ: is3D ? -30 : 0,
-                            scale: is3D ? 0.8 : 1
+                            rotateX: is3D ? 50 : 0,
+                            rotateZ: is3D ? -25 : 0,
+                            scale: is3D ? 0.7 : 1,
                         }}
                         transition={{ duration: 0.8, type: "spring", bounce: 0.1 }}
-                        className="flex flex-col gap-8 transform-gpu transform-style-3d"
+                        className="flex flex-col gap-8 transform-gpu [transform-style:preserve-3d]"
                     >
                         {/* Render layers side by side or stacked based on 3D */}
                         {Array.from({ length: maxLayer }).map((_, layerIdx) => {
@@ -149,23 +149,27 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
                                 <motion.div
                                     layout
                                     key={layer}
-                                    style={is3D ? { translateZ: `${layer * 100}px` } : {}}
+                                    animate={{
+                                        translateZ: is3D ? layer * 60 : 0,
+                                        y: is3D ? -layer * 20 : 0, // Slight vertical offset to emphasize stacking
+                                    }}
                                     className={clsx(
-                                        "grid gap-2 border-2 border-slate-300 dark:border-slate-700 p-4 rounded-xl shadow-lg bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm",
-                                        is3D && "absolute top-0 left-0 w-full"
+                                        "grid gap-2 border-2 border-slate-300 dark:border-slate-700 p-4 rounded-xl shadow-lg bg-white/70 dark:bg-slate-800/80 backdrop-blur-md transition-all",
+                                        is3D && "absolute inset-0 w-full"
                                     )}
                                     style={{
                                         gridTemplateColumns: `repeat(${maxRow}, minmax(60px, 1fr))`
                                     }}
                                 >
-                                    <div className="absolute -top-3 left-4 bg-slate-800 text-white px-2 py-0.5 rounded text-xs font-bold">
+                                    <div className="absolute -top-3 left-4 bg-slate-800 text-white px-2 py-0.5 rounded text-xs font-bold z-10">
                                         Layer {layer}
                                     </div>
 
                                     {Array.from({ length: maxRow }).map((_, rowIdx) => {
                                         const row = rowIdx + 1;
-                                        const binId = `${aisleId}-L${layer}-R${row}`;
-                                        // If bin doesn't exist, we could render empty placeholders, but let's assume dense grid
+                                        const bayStr = row.toString().padStart(2, '0');
+                                        const levelStr = String.fromCharCode(64 + layer); // 1->A, 2->B
+                                        const binId = `${aisleId}-${bayStr}-${levelStr}`;
                                         return <DraggableDroppableBin key={binId} binId={binId} />;
                                     })}
                                 </motion.div>
