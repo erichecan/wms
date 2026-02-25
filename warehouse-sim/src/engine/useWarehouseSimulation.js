@@ -7,17 +7,71 @@ export const AGENT_SPEED_MS = 250;
 export const PICK_DURATION_MS = 2000;
 
 export function useWarehouseSimulation() {
-    const [grid, setGrid] = useState(() => {
-        const saved = localStorage.getItem('warehouse_grid');
-        if (saved) {
-            try {
-                return JSON.parse(saved);
-            } catch (e) {
-                return generateGrid();
-            }
-        }
-        return generateGrid();
-    });
+    const [grid, setGrid] = useState([]);
+    const [loadingLayout, setLoadingLayout] = useState(true);
+
+    useEffect(() => {
+        // Fetch real layout from wms-clean backend
+        fetch('http://localhost:3000/api/layout')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.layout && data.layout.length > 0) {
+                    // Reconstruct grid based on layout data
+                    // We'll calculate max X and max Y from the layout to determine GRID_SIZE
+                    // For now, let's just override the shelves based on the aisle IDs
+                    // A simple approximation for 2D map:
+                    // Place real aisles onto the grid dynamically
+                    // We'll create a 20x20 grid (or rely on layout max dimensions)
+                    const newGrid = generateGrid();
+
+                    // Clear default shelves since we have actual layout
+                    for (let y = 0; y < 20; y++) {
+                        for (let x = 0; x < 20; x++) {
+                            newGrid[y][x].isShelf = false;
+                            newGrid[y][x].aisleId = null;
+                        }
+                    }
+
+                    // A basic packing logic: Place real aisles in rows
+                    let currX = 2;
+                    let currY = 2;
+                    data.layout.forEach((aisle) => {
+                        // Mark this segment as a shelf corresponding to an Aisle code
+                        if (currX < 18 && currY < 18) {
+                            newGrid[currY][currX].isShelf = true;
+                            newGrid[currY][currX].aisleId = aisle.id;
+
+                            newGrid[currY + 1][currX].isShelf = true; // Make shelf 2 dots long 
+                            newGrid[currY + 1][currX].aisleId = aisle.id;
+
+                            currX += 3; // Shift right
+                            if (currX > 16) {
+                                currX = 2;
+                                currY += 4; // Shift down to next row
+                            }
+                        }
+                    });
+
+                    setGrid(newGrid);
+                } else {
+                    setGrid(generateGrid());
+                }
+            })
+            .catch(err => {
+                console.error("Failed to load layout:", err);
+                const saved = localStorage.getItem('warehouse_grid');
+                if (saved) {
+                    try {
+                        setGrid(JSON.parse(saved));
+                    } catch (e) {
+                        setGrid(generateGrid());
+                    }
+                } else {
+                    setGrid(generateGrid());
+                }
+            })
+            .finally(() => setLoadingLayout(false));
+    }, []);
 
     const [mode, setMode] = useState('SIMULATE'); // 'SIMULATE' | 'EDIT'
     const [agentPos, setAgentPos] = useState(START_POS);
@@ -173,6 +227,6 @@ export function useWarehouseSimulation() {
     return {
         grid, agentPos, currentPath, globalPath, status, metrics, orders,
         mode, toggleMode, updateCell, clearGrid, resetToDefault,
-        generateOrder, startSimulation
+        generateOrder, startSimulation, loadingLayout
     };
 }

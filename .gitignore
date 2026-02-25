@@ -5,3 +5,6 @@ node_modules
 wms-app
 wms-frontend
 wms-ui
+venv
+wms-clean-temp
+*.log

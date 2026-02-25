@@ -1,11 +1,16 @@
-import { neon } from "@neondatabase/serverless";
-const sql = neon("postgresql://neondb_owner:npg_NqtkoQb4fK5O@ep-restless-cell-ai4zek6b-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require");
-async function test() {
+import { PrismaClient } from "@prisma/client";
+
+async function main() {
     try {
-        const result = await sql`SELECT 1 as test`;
-        console.log("Connection successful:", result);
-    } catch (err) {
-        console.error("Connection failed:", err);
+        console.log("Instantiating PrismaClient with url prop...");
+        // In Prisma 7, url might be a direct property?
+        const prisma = new PrismaClient({ url: process.env.DATABASE_URL });
+        const count = await prisma.bin.count();
+        console.log("Count with url:", count);
+        return;
+    } catch (e: any) {
+        console.error("Failed with url:", e.message);
     }
 }
-test();
+
+main();

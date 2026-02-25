@@ -8,9 +8,19 @@ import clsx from "clsx";
 import { DndContext, type DragEndEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
 
-// We wrap the bin to make it draggable/droppable
-function DraggableDroppableBin({ binId }: { binId: string }) {
-    const bin = useWarehouseStore(s => s.bins.find(b => b.id === binId));
+function DraggableDroppableBin({ binId, col, row, layer }: { binId: string, col: string, row: number, layer: number }) {
+    const existingBin = useWarehouseStore(s => s.bins.find(b => b.id === binId));
+
+    const bin = existingBin || {
+        id: binId,
+        col,
+        row,
+        layer,
+        sku: null,
+        quantity: 0,
+        inboundTime: null
+    };
+
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: `drag-${binId}`,
         data: { sourceBin: bin }
@@ -20,8 +30,6 @@ function DraggableDroppableBin({ binId }: { binId: string }) {
         id: `drop-${binId}`,
         data: { targetBin: bin }
     });
-
-    if (!bin) return null;
 
     const style = transform ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
@@ -167,10 +175,8 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
 
                                     {Array.from({ length: maxRow }).map((_, rowIdx) => {
                                         const row = rowIdx + 1;
-                                        const bayStr = row.toString().padStart(2, '0');
-                                        const levelStr = String.fromCharCode(64 + layer); // 1->A, 2->B
-                                        const binId = `${aisleId}-${bayStr}-${levelStr}`;
-                                        return <DraggableDroppableBin key={binId} binId={binId} />;
+                                        const binId = `${aisleId}-L${layer}-R${row}`;
+                                        return <DraggableDroppableBin key={binId} binId={binId} col={aisleId} row={row} layer={layer} />;
                                     })}
                                 </motion.div>
                             );

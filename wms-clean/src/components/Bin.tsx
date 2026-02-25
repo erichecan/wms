@@ -113,6 +113,8 @@ export function Bin({ bin }: BinProps) {
         }, 1500);
     };
 
+    const formattedId = `${bin.col}-${bin.row}-${String.fromCharCode(64 + bin.layer)}`;
+
     return (
         <>
             <motion.div
@@ -121,24 +123,19 @@ export function Bin({ bin }: BinProps) {
                 onPointerUp={handlePointerUp}
                 onPointerLeave={handlePointerLeave}
                 className={clsx(
-                    "relative w-full h-full min-h-[60px] min-w-[60px] rounded-lg border flex items-center justify-center cursor-pointer transition-colors shadow-sm",
-                    isSelected ? "bg-indigo-500/30 border-indigo-500 shadow-indigo-500/20 shadow-lg" : "bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 hover:border-indigo-400"
+                    "relative w-full h-full min-h-[50px] min-w-[50px] rounded-lg border-2 flex items-center justify-center cursor-pointer transition-colors shadow-sm",
+                    isSelected ? "bg-indigo-500/30 border-indigo-500 shadow-indigo-500/20 shadow-lg"
+                        : bin.quantity > 0 ? "bg-indigo-600 border-indigo-700 shadow-md hover:bg-indigo-500"
+                            : "bg-slate-50 dark:bg-slate-800/50 border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-400" // Empty state
                 )}
             >
-                {/* Layer indicator for 3D view context */}
-                <span className="absolute top-1 right-1 text-[10px] text-slate-400">L{bin.layer}</span>
-
-                {/* SKU indicator if exists */}
-                {bin.quantity > 0 && (
-                    <div className="flex flex-col items-center">
-                        <div className="w-8 h-8 rounded bg-blue-500/20 border border-blue-500/50 flex items-center justify-center">
-                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400">{bin.quantity}</span>
-                        </div>
-                        <span className="text-[10px] mt-1 text-slate-500 truncate max-w-full text-center px-1">
-                            {bin.sku}
-                        </span>
-                    </div>
-                )}
+                {/* ID indicator for context */}
+                <span className={clsx(
+                    "text-[11px] font-mono font-bold px-1 text-center",
+                    bin.quantity > 0 ? "text-white" : "text-slate-400"
+                )}>
+                    {formattedId.split('-').slice(1).join('-')} {/* Only show Row-Layer like 1-A */}
+                </span>
             </motion.div>
 
             {/* Glassmorphic Modal overlay */}
@@ -159,7 +156,7 @@ export function Bin({ bin }: BinProps) {
                             className="glass relative w-full max-w-sm rounded-2xl overflow-hidden p-6 text-slate-900 dark:text-white"
                         >
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-2xl font-bold">Bin {bin.id}</h3>
+                                <h3 className="text-2xl font-bold font-mono text-indigo-400">{formattedId}</h3>
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setShowQr(!showQr)}
@@ -197,7 +194,7 @@ export function Bin({ bin }: BinProps) {
                                 </div>
                             </div>
 
-                            <p className="opacity-70 text-sm mb-6">Column {bin.col} | Row {bin.row} | Layer {bin.layer}</p>
+                            <p className="opacity-70 text-sm mb-6 font-mono">System ID: {bin.id}</p>
 
                             {showQr && (
                                 <motion.div
@@ -205,8 +202,8 @@ export function Bin({ bin }: BinProps) {
                                     animate={{ height: "auto", opacity: 1 }}
                                     className="mb-6 bg-white p-4 rounded-xl flex flex-col items-center justify-center space-y-2 dark:bg-white"
                                 >
-                                    <QRCodeCanvas value={bin.id} size={150} />
-                                    <span className="text-black text-xs font-mono font-bold">{bin.id}</span>
+                                    <QRCodeCanvas value={formattedId} size={150} />
+                                    <span className="text-black text-xs font-mono font-bold">{formattedId}</span>
                                 </motion.div>
                             )}
 
@@ -253,7 +250,7 @@ export function Bin({ bin }: BinProps) {
                                         <input
                                             type="text"
                                             value={editSku}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditSku(e.target.value)}
+                                            onChange={e => setEditSku(e.target.value)}
                                             className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500"
                                             placeholder="Enter SKU..."
                                             autoFocus
@@ -276,7 +273,7 @@ export function Bin({ bin }: BinProps) {
                                             <input
                                                 type="number"
                                                 value={editQty}
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditQty(Number(e.target.value))}
+                                                onChange={e => setEditQty(Number(e.target.value))}
                                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-bold text-xl focus:outline-none focus:border-indigo-500"
                                             />
                                             <div className="flex gap-1">

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { neon } from "@neondatabase/serverless";
+
+const DB_URL = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_NqtkoQb4fK5O@ep-restless-cell-ai4zek6b-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require";
+const sql = neon(DB_URL);
 
 export async function GET() {
     try {
-        const bins = await prisma.bin.findMany({
-            orderBy: { id: "asc" },
-        });
+        const bins = await sql`SELECT * FROM "Bin" ORDER BY id ASC`;
         return NextResponse.json(bins);
     } catch (error: any) {
         console.error("Fetch bins error:", error);
@@ -19,18 +20,20 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const data = await request.json();
+        const data = (await request.json()) as any;
         const { id, updates } = data;
 
-        const bin = await prisma.bin.update({
-            where: { id },
-            data: {
-                sku: updates.sku,
-                quantity: updates.quantity,
-            },
-        });
+        const sku = updates.sku || null;
+        const quantity = updates.quantity || 0;
 
-        return NextResponse.json(bin);
+        const bin = await sql`
+            UPDATE "Bin" 
+            SET sku = ${sku}, quantity = ${quantity}, "updatedAt" = NOW() 
+            WHERE id = ${id} 
+            RETURNING *
+        `;
+
+        return NextResponse.json(bin[0]);
     } catch (error) {
         console.error("Update bin error:", error);
         return NextResponse.json({ error: "Failed to update bin" }, { status: 500 });

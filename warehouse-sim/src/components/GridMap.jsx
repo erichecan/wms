@@ -48,13 +48,18 @@ export default function GridMap({ grid, agentPos, orders, status, mode, updateCe
 
                         return (
                             <div
-                                key={`${x} -${y} `}
+                                key={`${x}-${y}`}
                                 className={classes.join(' ')}
                                 onMouseDown={(e) => handleMouseDown(e, x, y)}
                                 onMouseEnter={() => handleMouseEnter(x, y)}
                             >
+                                {isShelf && cell.aisleId && (
+                                    <span style={{ fontSize: '0.45rem', opacity: 0.8, color: '#fff', userSelect: 'none' }}>
+                                        {cell.aisleId}
+                                    </span>
+                                )}
                                 {isAgent && (
-                                    <div className={`agent ${status.toLowerCase()} `}>
+                                    <div className={`agent ${status.toLowerCase()}`}>
                                         <div className="agent-dot" />
                                         {status === 'PICKING' && (
                                             <span className="picking-indicator">Picking...</span>
