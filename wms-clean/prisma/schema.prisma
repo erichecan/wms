@@ -7,6 +7,7 @@ datasource db {
   provider = "postgresql"
 }
 
+// Updated 2026-02-27T03:55:00Z - items JSON 字段支持一个 Bin 多个 SKU
 model Bin {
   id          String    @id
   col         String
@@ -14,6 +15,7 @@ model Bin {
   row         Int
   sku         String?
   quantity    Int       @default(0)
+  items       Json      @default("[]")
   inboundTime DateTime? @default(now())
   updatedAt   DateTime  @updatedAt
 

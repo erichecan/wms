@@ -18,6 +18,7 @@ export async function GET() {
     }
 }
 
+// Updated 2026-02-27T04:02:00Z - 支持 items JSON 字段更新
 export async function POST(request: Request) {
     try {
         const data = (await request.json()) as any;
@@ -25,10 +26,11 @@ export async function POST(request: Request) {
 
         const sku = updates.sku || null;
         const quantity = updates.quantity || 0;
+        const items = JSON.stringify(updates.items || []);
 
         const bin = await sql`
             UPDATE "Bin" 
-            SET sku = ${sku}, quantity = ${quantity}, "updatedAt" = NOW() 
+            SET sku = ${sku}, quantity = ${quantity}, items = ${items}::jsonb, "updatedAt" = NOW() 
             WHERE id = ${id} 
             RETURNING *
         `;

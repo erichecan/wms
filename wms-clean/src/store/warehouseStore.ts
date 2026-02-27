@@ -1,12 +1,19 @@
 import { create } from "zustand";
 
+// Updated 2026-02-27T03:55:30Z - 支持一个 Bin 多个 SKU
+export interface BinItem {
+    sku: string;
+    quantity: number;
+}
+
 export interface Bin {
     id: string; // e.g. K1-L1-R1
     col: string; // K1, K2, K3, K4
     layer: number; // 1, 2, 3 (bottom to top)
     row: number; // e.g. 1 to 10
-    sku: string | null;
-    quantity: number;
+    sku: string | null; // 兼容旧数据：主 SKU
+    quantity: number; // 兼容旧数据：总数量
+    items: BinItem[]; // 多 SKU 支持
     inboundTime: string | null; // ISO Date String
 }
 
@@ -73,7 +80,14 @@ export const useWarehouseStore = create<WarehouseState>((set) => ({
             const res = await fetch("/api/bins");
             const data = await res.json();
             if (Array.isArray(data)) {
-                set({ bins: data });
+                // 兼容旧数据：如果 bin 没有 items 字段，从 sku/quantity 生成
+                const normalized = data.map((b: Bin) => ({
+                    ...b,
+                    items: Array.isArray(b.items) && b.items.length > 0
+                        ? b.items
+                        : b.sku ? [{ sku: b.sku, quantity: b.quantity }] : []
+                }));
+                set({ bins: normalized });
             }
         } catch (error) {
             console.error("Failed to fetch bins", error);

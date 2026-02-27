@@ -1,6 +1,7 @@
+// Updated 2026-02-27T03:45:00Z - 在 DraggableDroppableBin 层面检测点击，绕过 DnD Kit 的 pointer capture/preventDefault 问题
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { motion } from "framer-motion";
 import { Bin } from "./Bin";
 import { useWarehouseStore } from "@/store/warehouseStore";
@@ -10,6 +11,10 @@ import { useDroppable, useDraggable } from "@dnd-kit/core";
 
 function DraggableDroppableBin({ binId, col, row, layer }: { binId: string, col: string, row: number, layer: number }) {
     const existingBin = useWarehouseStore(s => s.bins.find(b => b.id === binId));
+    const selectBin = useWarehouseStore(s => s.selectBin);
+    const toggleBinSelection = useWarehouseStore(s => s.toggleBinSelection);
+    const selectedBinIds = useWarehouseStore(s => s.selectedBinIds);
+    const isMultiSelecting = selectedBinIds.length > 1;
 
     const bin = existingBin || {
         id: binId,
@@ -18,8 +23,11 @@ function DraggableDroppableBin({ binId, col, row, layer }: { binId: string, col:
         layer,
         sku: null,
         quantity: 0,
+        items: [],
         inboundTime: null
     };
+
+    const [showBinModal, setShowBinModal] = useState(false);
 
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: `drag-${binId}`,
@@ -36,6 +44,56 @@ function DraggableDroppableBin({ binId, col, row, layer }: { binId: string, col:
         zIndex: isDragging ? 50 : 1,
     } : undefined;
 
+    // DnD Kit 的 preventDefault 会阻止 click 事件，所以通过 pointerdown/pointerup 手动检测点击
+    const pointerStart = useRef<{ x: number; y: number; time: number } | null>(null);
+    const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+    const longPressTriggered = useRef(false);
+
+    const handleMergedPointerDown = (e: ReactPointerEvent) => {
+        pointerStart.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+        longPressTriggered.current = false;
+
+        longPressTimer.current = setTimeout(() => {
+            longPressTriggered.current = true;
+            toggleBinSelection(binId);
+            longPressTimer.current = null;
+        }, 1000);
+
+        // 调用 DnD Kit 的原始 onPointerDown
+        const dndHandler = listeners?.onPointerDown;
+        if (dndHandler && typeof dndHandler === "function") {
+            (dndHandler as (e: ReactPointerEvent) => void)(e);
+        }
+    };
+
+    const handlePointerUp = (e: ReactPointerEvent) => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+
+        if (longPressTriggered.current) {
+            longPressTriggered.current = false;
+            pointerStart.current = null;
+            return;
+        }
+
+        if (pointerStart.current) {
+            const dx = e.clientX - pointerStart.current.x;
+            const dy = e.clientY - pointerStart.current.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < 10) {
+                if (isMultiSelecting) {
+                    toggleBinSelection(binId);
+                } else {
+                    selectBin(binId);
+                    setShowBinModal(true);
+                }
+            }
+            pointerStart.current = null;
+        }
+    };
+
     return (
         <div
             ref={setDropRef}
@@ -47,13 +105,13 @@ function DraggableDroppableBin({ binId, col, row, layer }: { binId: string, col:
             <div
                 ref={setNodeRef}
                 style={style}
-                {...listeners}
+                onPointerDown={handleMergedPointerDown}
+                onPointerUp={handlePointerUp}
                 {...attributes}
                 className={clsx("w-full h-full", isDragging && "opacity-80 scale-105 cursor-grabbing")}
             >
-                {/* Pass pointer events through to allow Bin's own click handlers if not dragging */}
                 <div style={isDragging ? { pointerEvents: "none" } : undefined} className="w-full h-full touch-none">
-                    <Bin bin={bin} />
+                    <Bin bin={bin} showModal={showBinModal} onCloseModal={() => setShowBinModal(false)} />
                 </div>
             </div>
         </div>
@@ -121,10 +179,10 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
     };
 
     return (
-        <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 p-4">
+        <div className="w-full max-w-6xl mx-auto flex flex-col gap-4 p-4">
             {/* Controls */}
-            <div className="flex justify-between items-center glass p-4 rounded-xl">
-                <h2 className="text-xl font-bold">Aisle {aisleId}</h2>
+            <div className="flex justify-between items-center glass p-3 rounded-xl">
+                <h2 className="text-lg font-bold">Aisle {aisleId}</h2>
                 <button
                     onClick={() => setIs3D(!is3D)}
                     className={clsx(
@@ -138,7 +196,7 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
 
             <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
                 {/* Main visually transformable container */}
-                <div className="relative w-full overflow-hidden min-h-[600px] flex items-center justify-center bg-slate-100 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 [perspective:2000px]">
+                <div className="relative w-full overflow-hidden min-h-[400px] flex items-center justify-center bg-slate-100 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 [perspective:2000px]">
 
                     <motion.div
                         layout
@@ -148,7 +206,7 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
                             scale: is3D ? 0.7 : 1,
                         }}
                         transition={{ duration: 0.8, type: "spring", bounce: 0.1 }}
-                        className="flex flex-col gap-8 transform-gpu [transform-style:preserve-3d]"
+                        className="flex flex-col gap-6 transform-gpu [transform-style:preserve-3d] w-full"
                     >
                         {/* Render layers side by side or stacked based on 3D */}
                         {Array.from({ length: maxLayer }).map((_, layerIdx) => {
@@ -162,11 +220,11 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
                                         y: is3D ? -layer * 20 : 0, // Slight vertical offset to emphasize stacking
                                     }}
                                     className={clsx(
-                                        "grid gap-2 border-2 border-slate-300 dark:border-slate-700 p-4 rounded-xl shadow-lg bg-white/70 dark:bg-slate-800/80 backdrop-blur-md transition-all",
+                                        "grid gap-1.5 border-2 border-slate-300 dark:border-slate-700 p-3 pt-5 rounded-xl shadow-lg bg-white/70 dark:bg-slate-800/80 backdrop-blur-md transition-all",
                                         is3D && "absolute inset-0 w-full"
                                     )}
                                     style={{
-                                        gridTemplateColumns: `repeat(${maxRow}, minmax(60px, 1fr))`
+                                        gridTemplateColumns: `repeat(${maxRow}, minmax(0, 1fr))`
                                     }}
                                 >
                                     <div className="absolute -top-3 left-4 bg-slate-800 text-white px-2 py-0.5 rounded text-xs font-bold z-10">
