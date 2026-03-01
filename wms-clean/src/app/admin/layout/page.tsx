@@ -2,7 +2,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, X, Layers, GripVertical, Edit2, Check, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, X, Layers, GripVertical, Edit2, Check, Plus, Trash2, Camera } from "lucide-react";
+import { SkuPhotoOcr } from "@/components/SkuPhotoOcr";
 import { useRouter } from "next/navigation";
 import { useWarehouseStore, type Bin, type BinItem } from "@/store/warehouseStore";
 import clsx from "clsx";
@@ -27,6 +28,7 @@ function StackDetailModal({ stack, onClose }: { stack: BinStack; onClose: () => 
     const updateBin = useWarehouseStore(s => s.updateBin);
     const [isEditing, setIsEditing] = useState(false);
     const [editRows, setEditRows] = useState<EditRow[]>([]);
+    const [showPhotoOcr, setShowPhotoOcr] = useState(false);
 
     const allRows = [...stack.bins].reverse().flatMap(bin => {
         const layerLetter = String.fromCharCode(64 + bin.layer);
@@ -191,7 +193,7 @@ function StackDetailModal({ stack, onClose }: { stack: BinStack; onClose: () => 
                                                 <input
                                                     type="text"
                                                     value={row.sku}
-                                                    onChange={e => updateEditRow(idx, "sku", e.target.value)}
+                                                    onChange={e => updateEditRow(idx, "sku", String((e.target as { value?: string }).value ?? ""))}
                                                     className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-1.5 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 transition-colors"
                                                     placeholder="输入 SKU..."
                                                 />
@@ -200,7 +202,7 @@ function StackDetailModal({ stack, onClose }: { stack: BinStack; onClose: () => 
                                                 <input
                                                     type="number"
                                                     value={row.quantity}
-                                                    onChange={e => updateEditRow(idx, "quantity", e.target.value)}
+                                                    onChange={e => updateEditRow(idx, "quantity", Number((e.target as { value?: string }).value) || 0)}
                                                     className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-1.5 text-white font-bold text-center text-sm focus:outline-none focus:border-indigo-500 transition-colors"
                                                 />
                                             </td>
@@ -246,19 +248,45 @@ function StackDetailModal({ stack, onClose }: { stack: BinStack; onClose: () => 
                     </table>
 
                     {isEditing && (
-                        <div className="p-3 border-t border-slate-800 flex flex-wrap gap-2">
-                            {[...stack.bins].reverse().map(bin => {
-                                const ll = String.fromCharCode(64 + bin.layer);
-                                return (
-                                    <button
-                                        key={bin.id}
-                                        onClick={() => addEditRow(bin.id, bin.layer)}
-                                        className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-2.5 py-1.5 rounded-lg transition-colors"
-                                    >
-                                        <Plus className="w-3 h-3" /> 添加到 {ll} 层
-                                    </button>
-                                );
-                            })}
+                        <div className="p-3 border-t border-slate-800 space-y-3">
+                            <div className="flex flex-wrap gap-2">
+                                {[...stack.bins].reverse().map(bin => {
+                                    const ll = String.fromCharCode(64 + bin.layer);
+                                    return (
+                                        <button
+                                            key={bin.id}
+                                            onClick={() => addEditRow(bin.id, bin.layer)}
+                                            className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-2.5 py-1.5 rounded-lg transition-colors"
+                                        >
+                                            <Plus className="w-3 h-3" /> 添加到 {ll} 层
+                                        </button>
+                                    );
+                                })}
+                                <button
+                                    onClick={() => setShowPhotoOcr(!showPhotoOcr)}
+                                    className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-2.5 py-1.5 rounded-lg transition-colors"
+                                >
+                                    <Camera className="w-3 h-3" /> 拍照识别
+                                </button>
+                            </div>
+                            {showPhotoOcr && (
+                                <SkuPhotoOcr
+                                    onExtract={(extracted) => {
+                                        const first = stack.bins[0];
+                                        if (first) {
+                                            setEditRows(prev => [...prev, ...extracted.filter(i => i.sku.trim()).map((it, i) => ({
+                                                binId: first.id,
+                                                layer: first.layer,
+                                                itemIdx: prev.length + i,
+                                                sku: it.sku,
+                                                quantity: it.quantity,
+                                            }))]);
+                                        }
+                                        setShowPhotoOcr(false);
+                                    }}
+                                    onClose={() => setShowPhotoOcr(false)}
+                                />
+                            )}
                         </div>
                     )}
                 </div>

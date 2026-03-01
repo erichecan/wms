@@ -13,7 +13,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "CSV must contain at least a header and one data row" }, { status: 400 });
         }
 
-        const headers = rows[0].split(",");
+        const headerRow = rows[0];
+        if (!headerRow) {
+            return NextResponse.json({ error: "Invalid CSV format" }, { status: 400 });
+        }
+        const headers = headerRow.split(",");
         const skuIdx = headers.findIndex((h: string) => h.includes("SKU") || h.includes("商品编码") || h.includes("SKU"));
         const qtyIdx = headers.findIndex((h: string) => h.includes("Qty") || h.includes("Quantity") || h.includes("可用库存"));
         const binIdx = headers.findIndex((h: string) => h.includes("Bin") || h.includes("Location") || h.includes("库位"));
@@ -25,7 +29,9 @@ export async function POST(request: Request) {
         const results = { updated: 0, errors: 0, details: [] as string[] };
 
         for (let i = 1; i < rows.length; i++) {
-            const cols = rows[i].split(",");
+            const line = rows[i];
+            if (!line) continue;
+            const cols = line.split(",");
             const sku = cols[skuIdx]?.trim();
             const qty = parseInt(cols[qtyIdx]?.trim() || "0");
             const binId = binIdx !== -1 ? cols[binIdx]?.trim() : null;

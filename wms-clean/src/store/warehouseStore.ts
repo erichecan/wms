@@ -117,30 +117,77 @@ export const useWarehouseStore = create<WarehouseState>((set) => ({
 
     clearSelection: () => set({ selectedBinIds: [] }),
 
-    moveBinContents: (sourceIds, targetCol, targetRow, targetLayer) => set((state) => {
-        const newBins = [...state.bins];
-        const targetBin = newBins.find(b => b.col === targetCol && b.row === targetRow && b.layer === targetLayer);
+    // Updated 2026-02-27T05:15:00Z - 支持多选批量移动、items 数组合并，移动后持久化
+    moveBinContents: (sourceIds, targetCol, targetRow, targetLayer) => {
+        const toPersist: { id: string; updates: Partial<Bin> }[] = [];
+        let targetIdForLog = "";
 
-        if (sourceIds.length === 1 && targetBin) {
-            const sourceBin = newBins.find(b => b.id === sourceIds[0]);
-            if (sourceBin) {
-                // swap contents
-                const tempSku = targetBin.sku;
-                const tempQty = targetBin.quantity;
-                const tempTime = targetBin.inboundTime;
+        set((state) => {
+            const newBins = state.bins.map(b => ({ ...b, items: [...(b.items || [])] }));
+            const targetBin = newBins.find(b => b.col === targetCol && b.row === targetRow && b.layer === targetLayer);
+            if (!targetBin || sourceIds.length === 0) return state;
 
-                targetBin.sku = sourceBin.sku;
-                targetBin.quantity = sourceBin.quantity;
-                targetBin.inboundTime = sourceBin.inboundTime;
+            const sourceBins = sourceIds
+                .map(id => newBins.find(b => b.id === id))
+                .filter((b): b is Bin => !!b && b.id !== targetBin.id);
+            if (sourceBins.length === 0) return state;
 
-                sourceBin.sku = tempSku;
-                sourceBin.quantity = tempQty;
-                sourceBin.inboundTime = tempTime;
+            // 合并所有 source 的 items 到 target（同 SKU 数量相加）
+            const mergedItems = new Map<string, number>();
+            for (const bin of sourceBins) {
+                const items = Array.isArray(bin.items) && bin.items.length > 0
+                    ? bin.items
+                    : bin.sku ? [{ sku: bin.sku, quantity: bin.quantity }] : [];
+                for (const it of items) {
+                    if (it.sku.trim()) {
+                        mergedItems.set(it.sku, (mergedItems.get(it.sku) || 0) + it.quantity);
+                    }
+                }
             }
-        }
+            const existingItems = Array.isArray(targetBin.items) && targetBin.items.length > 0
+                ? targetBin.items
+                : targetBin.sku ? [{ sku: targetBin.sku, quantity: targetBin.quantity }] : [];
+            for (const it of existingItems) {
+                if (it.sku.trim()) {
+                    mergedItems.set(it.sku, (mergedItems.get(it.sku) || 0) + it.quantity);
+                }
+            }
+            const finalItems = Array.from(mergedItems.entries()).map(([sku, quantity]) => ({ sku, quantity }));
+            const totalQty = finalItems.reduce((s, i) => s + i.quantity, 0);
 
-        return { bins: newBins, selectedBinIds: [] };
-    }),
+            targetBin.items = finalItems;
+            targetBin.sku = finalItems[0]?.sku || null;
+            targetBin.quantity = totalQty;
+            targetBin.inboundTime = targetBin.inboundTime || new Date().toISOString();
+
+            targetIdForLog = targetBin.id;
+            toPersist.push({
+                id: targetBin.id,
+                updates: { items: finalItems, sku: targetBin.sku, quantity: totalQty }
+            });
+
+            for (const bin of sourceBins) {
+                bin.items = [];
+                bin.sku = null;
+                bin.quantity = 0;
+                toPersist.push({ id: bin.id, updates: { items: [], sku: null, quantity: 0 } });
+            }
+
+            return { bins: newBins, selectedBinIds: [] };
+        });
+
+        toPersist.forEach(({ id, updates }) => {
+            fetch("/api/bins", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, updates }) })
+                .catch(err => console.error("Failed to persist bin move", id, err));
+        });
+        if (targetIdForLog && sourceIds.length > 0) {
+            fetch("/api/bins/move-log", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sourceIds, targetId: targetIdForLog })
+            }).catch(err => console.error("Failed to log bin move", err));
+        }
+    },
 
     updateDimensions: (cols, rows) => set({ dimensions: { cols, rows } }),
     addObstacle: (obstacle) => set((state) => ({ obstacles: [...state.obstacles, obstacle] })),

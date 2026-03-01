@@ -1,10 +1,11 @@
 "use client";
 
-// Updated 2026-02-27T03:56:00Z - 支持多 SKU 显示/编辑；Portal 弹窗；modal 由外部 props 控制
+// Updated 2026-02-27T06:05:00Z - 支持多 SKU 显示/编辑；Portal 弹窗；e.target 类型断言修复
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, Edit2, Check, X, QrCode, Package, Hash, Plus, Trash2 } from "lucide-react";
+import { Clock, Edit2, Check, X, QrCode, Package, Hash, Plus, Trash2, Camera } from "lucide-react";
+import { SkuPhotoOcr } from "./SkuPhotoOcr";
 import { type Bin as BinType, type BinItem, type WarehouseState, useWarehouseStore } from "@/store/warehouseStore";
 import { QRCodeCanvas } from "qrcode.react";
 import clsx from "clsx";
@@ -26,6 +27,7 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
     const [editItems, setEditItems] = useState<BinItem[]>([]);
     const [showTime, setShowTime] = useState(false);
     const [showQr, setShowQr] = useState(false);
+    const [showPhotoOcr, setShowPhotoOcr] = useState(false);
     const [mounted, setMounted] = useState(false);
     useEffect(() => { setMounted(true); }, []);
 
@@ -67,8 +69,9 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
 
     const updateItem = (idx: number, field: keyof BinItem, value: string | number) => {
         const updated = [...editItems];
-        if (field === "sku") updated[idx] = { ...updated[idx], sku: value as string };
-        else updated[idx] = { ...updated[idx], quantity: Number(value) };
+        const cur = updated[idx];
+        if (field === "sku") updated[idx] = { sku: value as string, quantity: cur?.quantity ?? 0 };
+        else updated[idx] = { sku: cur?.sku ?? "", quantity: Number(value) };
         setEditItems(updated);
     };
 
@@ -176,11 +179,27 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
                                             <span>SKU Items ({isEditing ? editItems.length : items.length})</span>
                                         </div>
                                         {isEditing && (
-                                            <button onClick={addItem} className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
-                                                <Plus className="w-3 h-3" /> Add SKU
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <button onClick={addItem} className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+                                                    <Plus className="w-3 h-3" /> Add SKU
+                                                </button>
+                                                <button onClick={() => setShowPhotoOcr(!showPhotoOcr)} className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+                                                    <Camera className="w-3 h-3" /> 拍照识别
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
+
+                                    {isEditing && showPhotoOcr && (
+                                        <SkuPhotoOcr
+                                            onExtract={(extracted) => {
+                                                const valid = extracted.filter(i => i.sku.trim());
+                                                setEditItems(prev => [...prev.filter(i => i.sku.trim()), ...valid]);
+                                                setShowPhotoOcr(false);
+                                            }}
+                                            onClose={() => setShowPhotoOcr(false)}
+                                        />
+                                    )}
 
                                     {isEditing ? (
                                         editItems.map((item, idx) => (
@@ -188,14 +207,14 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
                                                 <input
                                                     type="text"
                                                     value={item.sku}
-                                                    onChange={e => updateItem(idx, "sku", e.target.value)}
+                                                    onChange={e => updateItem(idx, "sku", String((e.target as { value?: string }).value ?? ""))}
                                                     className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-white font-mono text-sm focus:outline-none focus:border-indigo-500"
                                                     placeholder="SKU..."
                                                 />
                                                 <input
                                                     type="number"
                                                     value={item.quantity}
-                                                    onChange={e => updateItem(idx, "quantity", e.target.value)}
+                                                    onChange={e => updateItem(idx, "quantity", Number((e.target as { value?: string }).value) || 0)}
                                                     className="w-20 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-white font-bold text-center focus:outline-none focus:border-indigo-500"
                                                 />
                                                 <button onClick={() => removeItem(idx)} className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors">

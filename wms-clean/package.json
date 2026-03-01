@@ -7,11 +7,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/bun": "latest",
     "@types/react": "19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/ws": "^8.18.1",
     "typescript": "5.9.3"
   },
   "peerDependencies": {
@@ -38,6 +43,7 @@
     "resend": "^6.9.2",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1",
+    "tesseract.js": "^7.0.0",
     "ws": "^8.19.0",
     "zustand": "^5.0.11"
   }

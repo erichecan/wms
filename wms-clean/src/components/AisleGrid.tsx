@@ -216,12 +216,12 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
                                     layout
                                     key={layer}
                                     animate={{
-                                        translateZ: is3D ? layer * 60 : 0,
-                                        y: is3D ? -layer * 20 : 0, // Slight vertical offset to emphasize stacking
+                                        translateZ: is3D ? (layer - 1) * 50 : 0,
+                                        y: is3D ? (layer - 1) * -12 : 0,
                                     }}
                                     className={clsx(
-                                        "grid gap-1.5 border-2 border-slate-300 dark:border-slate-700 p-3 pt-5 rounded-xl shadow-lg bg-white/70 dark:bg-slate-800/80 backdrop-blur-md transition-all",
-                                        is3D && "absolute inset-0 w-full"
+                                        "grid gap-1.5 border-2 border-slate-300 dark:border-slate-700 p-3 pt-5 rounded-xl shadow-lg bg-white/70 dark:bg-slate-800/80 backdrop-blur-md transition-all transform-gpu",
+                                        is3D && "shadow-xl"
                                     )}
                                     style={{
                                         gridTemplateColumns: `repeat(${maxRow}, minmax(0, 1fr))`

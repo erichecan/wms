@@ -22,6 +22,14 @@ model Bin {
   @@index([col, row, layer])
 }
 
+// Updated 2026-02-27T05:18:00Z - 库位变化记录
+model BinMoveLog {
+  id         String   @id @default(cuid())
+  sourceIds Json     // ["K1-L1-R1", "K1-L1-R2"]
+  targetId  String   // K1-L1-R5
+  movedAt   DateTime @default(now())
+}
+
 model Product {
   sku         String  @id
   name        String?

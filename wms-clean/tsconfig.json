@@ -2,7 +2,9 @@
   "compilerOptions": {
     // Environment setup & latest features
     "lib": [
-      "ESNext"
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
     ],
     "target": "ESNext",
     "module": "Preserve",
@@ -45,6 +47,7 @@
     "**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "test-db.ts"
   ]
 }
