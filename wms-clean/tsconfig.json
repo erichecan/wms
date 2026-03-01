@@ -49,6 +49,6 @@
   "exclude": [
     "node_modules",
     "test-db.ts",
-    "prisma/seed-db.ts"
+    "prisma"
   ]
 }

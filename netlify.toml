@@ -1,7 +1,7 @@
 # Updated 2026-02-27T06:15:00Z - Netlify 部署配置（wms-clean 子目录）
 [build]
   base = "wms-clean"
-  command = "npm run build"
+  command = "npx prisma generate && npm run build"
   # Next.js 由 Netlify OpenNext 自动处理 publish 目录
 
 [build.environment]
