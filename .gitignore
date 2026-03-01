@@ -8,3 +8,6 @@ wms-ui
 venv
 wms-clean-temp
 *.log
+
+# Local Netlify folder
+.netlify
