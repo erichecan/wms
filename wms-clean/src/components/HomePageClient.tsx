@@ -34,6 +34,10 @@ export function HomePageClient() {
                 </button>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <Link href="/aisle-qrcodes" className="p-6 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 transition-all font-semibold flex flex-col items-center justify-center gap-2">
+                        <span className="text-2xl">📷</span>
+                        通道二维码打印
+                    </Link>
                     <Link href="/aisle/K1" className="p-6 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 transition-all font-semibold flex flex-col items-center justify-center gap-2">
                         <span className="text-2xl">📱</span>
                         Default Aisle (K1)

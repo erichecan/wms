@@ -52,6 +52,9 @@ export interface WarehouseState {
     toggleBinSelection: (id: string) => void;
     clearSelection: () => void;
     moveBinContents: (sourceIds: string[], targetCol: string, targetRow: number, targetLayer: number) => void;
+    pendingSkuMove: { sourceBinId: string; sku: string; quantity: number } | null;
+    setPendingSkuMove: (p: { sourceBinId: string; sku: string; quantity: number } | null) => void;
+    moveSkuToBin: (sourceBinId: string, sku: string, qty: number, targetBinId: string) => void;
     // Layout Actions
     updateDimensions: (width: number, height: number) => void;
     addObstacle: (obstacle: LayoutObstacle) => void;
@@ -60,9 +63,11 @@ export interface WarehouseState {
     updateBin: (id: string, updates: Partial<Bin>) => void;
 }
 
-export const useWarehouseStore = create<WarehouseState>((set) => ({
+export const useWarehouseStore = create<WarehouseState>((set, get) => ({
     bins: [],
     selectedBinIds: [],
+    pendingSkuMove: null,
+    setPendingSkuMove: (p) => set({ pendingSkuMove: p }),
     dimensions: { cols: 30, rows: 20 },
     obstacles: [
         { id: 'pillar-1', x: 10, y: 5, width: 2, height: 2 },
@@ -121,11 +126,25 @@ export const useWarehouseStore = create<WarehouseState>((set) => ({
     moveBinContents: (sourceIds, targetCol, targetRow, targetLayer) => {
         const toPersist: { id: string; updates: Partial<Bin> }[] = [];
         let targetIdForLog = "";
+        const targetBinId = `${targetCol}-L${targetLayer}-R${targetRow}`;
 
         set((state) => {
             const newBins = state.bins.map(b => ({ ...b, items: [...(b.items || [])] }));
-            const targetBin = newBins.find(b => b.col === targetCol && b.row === targetRow && b.layer === targetLayer);
-            if (!targetBin || sourceIds.length === 0) return state;
+            let targetBin = newBins.find(b => b.col === targetCol && b.row === targetRow && b.layer === targetLayer);
+            if (!targetBin) {
+                targetBin = {
+                    id: targetBinId,
+                    col: targetCol,
+                    row: targetRow,
+                    layer: targetLayer,
+                    sku: null,
+                    quantity: 0,
+                    items: [],
+                    inboundTime: null
+                };
+                newBins.push(targetBin);
+            }
+            if (sourceIds.length === 0) return state;
 
             const sourceBins = sourceIds
                 .map(id => newBins.find(b => b.id === id))
@@ -187,6 +206,50 @@ export const useWarehouseStore = create<WarehouseState>((set) => ({
                 body: JSON.stringify({ sourceIds, targetId: targetIdForLog })
             }).catch(err => console.error("Failed to log bin move", err));
         }
+    },
+
+    // 2026-02-27 单个 SKU 跨托盘移动
+    moveSkuToBin: (sourceBinId, sku, qty, targetBinId) => {
+        const toPersist: { id: string; updates: Partial<Bin> }[] = [];
+        set((state) => {
+            const newBins = state.bins.map(b => ({ ...b, items: [...(b.items || [])] }));
+            const sourceBin = newBins.find(b => b.id === sourceBinId);
+            let targetBin = newBins.find(b => b.id === targetBinId);
+            if (!sourceBin) return state;
+            const sourceItems = Array.isArray(sourceBin.items) && sourceBin.items.length > 0 ? sourceBin.items : sourceBin.sku ? [{ sku: sourceBin.sku, quantity: sourceBin.quantity }] : [];
+            const skuItem = sourceItems.find(it => it.sku === sku);
+            if (!skuItem || skuItem.quantity < qty) return state;
+
+            if (!targetBin) {
+                const m = targetBinId.match(/^([A-Za-z0-9]+)-L(\d+)-R(\d+)$/);
+                targetBin = { id: targetBinId, col: m?.[1] ?? "K1", row: parseInt(m?.[3] ?? "1", 10), layer: parseInt(m?.[2] ?? "1", 10), sku: null, quantity: 0, items: [], inboundTime: null };
+                newBins.push(targetBin);
+            }
+
+            const moveQty = Math.min(qty, skuItem.quantity);
+            const newSourceItems = sourceItems.map(it => it.sku === sku ? { ...it, quantity: it.quantity - moveQty } : it).filter(it => it.quantity > 0);
+            const targetItems = Array.isArray(targetBin.items) && targetBin.items.length > 0 ? targetBin.items : targetBin.sku ? [{ sku: targetBin.sku, quantity: targetBin.quantity }] : [];
+            const existingTarget = targetItems.find(it => it.sku === sku);
+            const newTargetItems = existingTarget ? targetItems.map(it => it.sku === sku ? { ...it, quantity: it.quantity + moveQty } : it) : [...targetItems, { sku, quantity: moveQty }];
+
+            const srcTotal = newSourceItems.reduce((s, i) => s + i.quantity, 0);
+            const tgtTotal = newTargetItems.reduce((s, i) => s + i.quantity, 0);
+
+            sourceBin.items = newSourceItems;
+            sourceBin.sku = newSourceItems[0]?.sku || null;
+            sourceBin.quantity = srcTotal;
+            targetBin.items = newTargetItems;
+            targetBin.sku = newTargetItems[0]?.sku || null;
+            targetBin.quantity = tgtTotal;
+
+            toPersist.push({ id: sourceBin.id, updates: { items: newSourceItems, sku: sourceBin.sku, quantity: srcTotal } });
+            toPersist.push({ id: targetBin.id, updates: { items: newTargetItems, sku: targetBin.sku, quantity: tgtTotal } });
+            return { bins: newBins, pendingSkuMove: null };
+        });
+        toPersist.forEach(({ id, updates }) => {
+            fetch("/api/bins", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, updates }) }).catch(err => console.error("Failed to persist sku move", id, err));
+        });
+        fetch("/api/bins/move-log", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sourceIds: [sourceBinId], targetId: targetBinId }) }).catch(() => {});
     },
 
     updateDimensions: (cols, rows) => set({ dimensions: { cols, rows } }),

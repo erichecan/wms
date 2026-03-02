@@ -9,12 +9,17 @@ import clsx from "clsx";
 import { DndContext, type DragEndEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
 
+// 2026-02-27 选择目标模式：点击 bin 时若 pendingSkuMove 存在则执行 moveSkuToBin
 function DraggableDroppableBin({ binId, col, row, layer }: { binId: string, col: string, row: number, layer: number }) {
     const existingBin = useWarehouseStore(s => s.bins.find(b => b.id === binId));
     const selectBin = useWarehouseStore(s => s.selectBin);
     const toggleBinSelection = useWarehouseStore(s => s.toggleBinSelection);
     const selectedBinIds = useWarehouseStore(s => s.selectedBinIds);
+    const pendingSkuMove = useWarehouseStore(s => s.pendingSkuMove);
+    const moveSkuToBin = useWarehouseStore(s => s.moveSkuToBin);
+    const setPendingSkuMove = useWarehouseStore(s => s.setPendingSkuMove);
     const isMultiSelecting = selectedBinIds.length > 1;
+    const isSelectTargetMode = !!pendingSkuMove;
 
     const bin = existingBin || {
         id: binId,
@@ -31,7 +36,8 @@ function DraggableDroppableBin({ binId, col, row, layer }: { binId: string, col:
 
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: `drag-${binId}`,
-        data: { sourceBin: bin }
+        data: { sourceBin: bin },
+        disabled: isSelectTargetMode
     });
 
     const { isOver, setNodeRef: setDropRef } = useDroppable({
@@ -85,7 +91,11 @@ function DraggableDroppableBin({ binId, col, row, layer }: { binId: string, col:
             const dy = e.clientY - pointerStart.current.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             if (distance < 12) {
-                if (isMultiSelecting) {
+                if (isSelectTargetMode) {
+                    if (binId === pendingSkuMove!.sourceBinId) return;
+                    moveSkuToBin(pendingSkuMove!.sourceBinId, pendingSkuMove!.sku, pendingSkuMove!.quantity, binId);
+                    setPendingSkuMove(null);
+                } else if (isMultiSelecting) {
                     toggleBinSelection(binId);
                 } else {
                     selectBin(binId);
@@ -101,7 +111,8 @@ function DraggableDroppableBin({ binId, col, row, layer }: { binId: string, col:
             ref={setDropRef}
             className={clsx(
                 "relative rounded-lg transition-colors",
-                isOver && "ring-2 ring-emerald-500 bg-emerald-500/20"
+                isOver && "ring-2 ring-emerald-500 bg-emerald-500/20",
+                isSelectTargetMode && binId !== pendingSkuMove?.sourceBinId && "ring-2 ring-amber-400/60 bg-amber-500/10"
             )}
         >
             <div
@@ -125,6 +136,8 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
     const bins = useWarehouseStore(state => state.bins);
     const moveBinContents = useWarehouseStore(state => state.moveBinContents);
     const selectedBinIds = useWarehouseStore(state => state.selectedBinIds);
+    const pendingSkuMove = useWarehouseStore(state => state.pendingSkuMove);
+    const setPendingSkuMove = useWarehouseStore(state => state.setPendingSkuMove);
     const [is3D, setIs3D] = useState(false);
 
     // Filter bins for this particular aisle (column)
@@ -135,10 +148,10 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
     const maxRow = Math.max(...aisleBins.map(b => b.row), 1);
     const maxLayer = Math.max(...aisleBins.map(b => b.layer), 1);
 
-    // DnD Sensors：鼠标 10px 移动激活拖拽；触屏 180ms 长按激活，tolerance 8 减少误触
+    // 2026-02-27T09:35:00Z - 触屏 1100ms 长按先触发多选，再移动才拖拽
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
-        useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } })
+        useSensor(TouchSensor, { activationConstraint: { delay: 1100, tolerance: 8 } })
     );
 
     const handleDragEnd = async (event: DragEndEvent) => {
@@ -187,6 +200,20 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
                     {is3D ? "2D Plan View" : "3D Perspective (斜视图)"}
                 </button>
             </div>
+
+            {pendingSkuMove && (
+                <div className="flex items-center justify-between gap-4 p-3 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-800 dark:text-amber-200">
+                    <span className="font-medium">
+                        选择目标库位：将 SKU <code className="font-mono font-bold px-1 rounded bg-amber-500/30">{pendingSkuMove.sku}</code> × {pendingSkuMove.quantity} 移动到其他托盘
+                    </span>
+                    <button
+                        onClick={() => setPendingSkuMove(null)}
+                        className="px-3 py-1.5 rounded-lg bg-slate-500/30 hover:bg-slate-500/50 text-slate-700 dark:text-slate-300 transition-colors"
+                    >
+                        取消
+                    </button>
+                </div>
+            )}
 
             <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
                 {/* Main visually transformable container */}

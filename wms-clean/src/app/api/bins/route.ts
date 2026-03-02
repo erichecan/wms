@@ -18,20 +18,28 @@ export async function GET() {
     }
 }
 
-// Updated 2026-02-27T04:02:00Z - 支持 items JSON 字段更新
+// Updated 2026-02-27T09:30:00Z - 支持 upsert，空库位可接收拖拽
 export async function POST(request: Request) {
     try {
         const data = (await request.json()) as any;
         const { id, updates } = data;
 
-        const sku = updates.sku || null;
-        const quantity = updates.quantity || 0;
-        const items = JSON.stringify(updates.items || []);
+        const sku = updates.sku ?? null;
+        const quantity = updates.quantity ?? 0;
+        const items = JSON.stringify(updates.items ?? []);
+        const parts = String(id || "").match(/^([A-Za-z0-9]+)-L(\d+)-R(\d+)$/);
+        const col = updates.col ?? parts?.[1] ?? "K1";
+        const layer = updates.layer ?? (parts?.[2] ? parseInt(parts[2], 10) : 1);
+        const row = updates.row ?? (parts?.[3] ? parseInt(parts[3], 10) : 1);
 
         const bin = await sql`
-            UPDATE "Bin" 
-            SET sku = ${sku}, quantity = ${quantity}, items = ${items}::jsonb, "updatedAt" = NOW() 
-            WHERE id = ${id} 
+            INSERT INTO "Bin" (id, col, "row", layer, sku, quantity, items, "inboundTime", "updatedAt")
+            VALUES (${id}, ${col}, ${row}, ${layer}, ${sku}, ${quantity}, ${items}::jsonb, NOW(), NOW())
+            ON CONFLICT (id) DO UPDATE SET
+                sku = ${sku},
+                quantity = ${quantity},
+                items = ${items}::jsonb,
+                "updatedAt" = NOW()
             RETURNING *
         `;
 

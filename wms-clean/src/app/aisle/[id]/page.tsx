@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AisleGrid } from "@/components/AisleGrid";
 import { CsvImport } from "@/components/CsvImport";
+import { MoveLogPanel } from "@/components/MoveLogPanel";
+import { SkuSearch } from "@/components/SkuSearch";
 import { useWarehouseStore, type WarehouseState } from "@/store/warehouseStore";
 import { ArrowLeft } from "lucide-react";
 
@@ -26,7 +28,8 @@ export default function AislePage() {
     return (
         <div className="flex-1 flex flex-col pt-6">
             <div className="max-w-5xl w-full mx-auto px-4 mb-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-wrap items-center gap-3 justify-between">
+                    <div className="flex items-center gap-3 shrink-0">
                     <button
                         onClick={() => router.push("/")}
                         className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
@@ -44,6 +47,9 @@ export default function AislePage() {
                     >
                         Reset Data
                     </button>
+                    </div>
+                    <SkuSearch />
+                    <MoveLogPanel />
                 </div>
             </div>
 
