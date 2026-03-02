@@ -1,4 +1,4 @@
-// Updated 2026-02-27T04:00:00Z - 添加拖拽通道功能
+// Updated 2026-02-27T08:45:00Z - admin layout 支持拖拽 bin 方块移动货物
 "use client";
 
 import { useEffect, useState } from "react";
@@ -306,7 +306,10 @@ export default function AdminLayoutPage() {
     const router = useRouter();
     const bins = useWarehouseStore(s => s.bins);
     const fetchBins = useWarehouseStore(s => s.fetchBins);
+    const moveBinContents = useWarehouseStore(s => s.moveBinContents);
     const [selectedStack, setSelectedStack] = useState<BinStack | null>(null);
+    const [binDragStack, setBinDragStack] = useState<BinStack | null>(null);
+    const [binDropStack, setBinDropStack] = useState<BinStack | null>(null);
 
     useEffect(() => {
         if (bins.length === 0) {
@@ -359,22 +362,59 @@ export default function AdminLayoutPage() {
         return a.row - b.row;
     });
 
-    // Updated 2026-02-27T04:10:00Z - 缩小 bin 方块，移除 flex-shrink-0 以消除横向滚动条
+    // 2026-02-27T08:45:00Z - bin 方块可点击打开详情，可拖拽到其他方块移动货物
     const renderStackSquare = (stack: BinStack, labelPrefix: string = "") => {
+        const stackId = `${stack.col}-${stack.row}`;
+        const isBinDragging = binDragStack && `${binDragStack.col}-${binDragStack.row}` === stackId;
+        const isBinDropTarget = binDropStack && `${binDropStack.col}-${binDropStack.row}` === stackId;
         return (
-            <button
-                key={`${stack.col}-${stack.row}`}
+            <div
+                key={stackId}
+                draggable
+                onDragStart={(e) => {
+                    e.dataTransfer.setData("stack", JSON.stringify({ col: stack.col, row: stack.row }));
+                    e.dataTransfer.effectAllowed = "move";
+                    setBinDragStack(stack);
+                }}
+                onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    if (!isBinDragging) setBinDropStack(stack);
+                }}
+                onDragLeave={() => setBinDropStack(null)}
+                onDrop={(e) => {
+                    e.preventDefault();
+                    const raw = e.dataTransfer.getData("stack");
+                    if (raw) {
+                        try {
+                            const { col: srcCol, row: srcRow } = JSON.parse(raw) as { col: string; row: number };
+                            if (srcCol !== stack.col || srcRow !== stack.row) {
+                                const srcStack = stacksMap.get(`${srcCol}-${srcRow}`);
+                                const firstTarget = stack.bins[0];
+                                if (srcStack && firstTarget && srcStack.bins.some(b => b.quantity > 0)) {
+                                    const sourceIds = srcStack.bins.map(b => b.id);
+                                    moveBinContents(sourceIds, firstTarget.col, firstTarget.row, firstTarget.layer);
+                                }
+                            }
+                        } catch (_) { /* ignore */ }
+                    }
+                    setBinDragStack(null);
+                    setBinDropStack(null);
+                }}
+                onDragEnd={() => { setBinDragStack(null); setBinDropStack(null); }}
                 onClick={() => setSelectedStack(stack)}
-                title={`${stack.col} Row ${stack.row}`}
+                title={`${stack.col} Row ${stack.row} - 点击查看/拖拽移动`}
                 className={clsx(
-                    "w-8 h-8 aspect-square rounded text-xs font-bold flex items-center justify-center transition-all border outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm hover:-translate-y-0.5",
+                    "w-8 h-8 aspect-square rounded text-xs font-bold flex items-center justify-center transition-all border outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm hover:-translate-y-0.5 cursor-grab active:cursor-grabbing select-none",
                     stack.hasItems
                         ? "bg-indigo-600 border-indigo-700 text-white shadow-md hover:bg-indigo-500"
-                        : "bg-slate-100 border-slate-300 dark:bg-slate-800/80 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                        : "bg-slate-100 border-slate-300 dark:bg-slate-800/80 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700",
+                    isBinDragging && "opacity-50 scale-90",
+                    isBinDropTarget && "ring-2 ring-emerald-400 bg-emerald-500/30"
                 )}
             >
                 {labelPrefix}{stack.row}
-            </button>
+            </div>
         );
     };
 
@@ -535,13 +575,14 @@ export default function AdminLayoutPage() {
                             </div>
 
                             {/* Right Storage */}
+                            {/* 从左边拖到右侧空白时，插入到右侧第一个位置而非末尾 - 2026-02-27T08:35:00Z */}
                             <div
                                 className="w-[42%] flex justify-start pl-4 pt-20"
                                 onDragOver={(e) => e.preventDefault()}
                                 onDrop={() => {
                                     if (dragAisle && !orderedRightAisles.includes(dragAisle)) {
                                         const newOrder = orderedAisleNames.filter(a => a !== dragAisle);
-                                        newOrder.push(dragAisle);
+                                        newOrder.splice(orderedMidPoint, 0, dragAisle);
                                         setAisleOrder(newOrder);
                                         setDragAisle(null);
                                         setDragOverAisle(null);
@@ -553,7 +594,7 @@ export default function AdminLayoutPage() {
                         </div>
 
                         <p className="text-center text-xs text-slate-500 mt-2">
-                            Drag aisles to rearrange layout
+                            拖拽通道列可调整左右布局；拖拽 bin 方块可移动货物
                         </p>
                     </div>
                 )}

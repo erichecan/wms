@@ -10,6 +10,37 @@ import { type Bin as BinType, type BinItem, type WarehouseState, useWarehouseSto
 import { QRCodeCanvas } from "qrcode.react";
 import clsx from "clsx";
 
+// 单行 SKU：数量 + 时钟图标（悬停/点击显示入库时间）
+function SkuRowWithTime({ sku, quantity, inboundTime }: { sku: string; quantity: number; inboundTime: string | null }) {
+    const [showTime, setShowTime] = useState(false);
+    const timeStr = inboundTime ? new Date(inboundTime).toLocaleString("zh-CN") : "-";
+    return (
+        <div className="bg-white/10 p-3 rounded-xl border border-white/10 flex items-center justify-between gap-3">
+            <span className="font-mono font-bold text-sm flex-1">{sku}</span>
+            <span className="font-bold text-lg text-indigo-300 w-14 text-right">{quantity}</span>
+            <div
+                className="relative shrink-0 inline-flex"
+                onClick={() => setShowTime(!showTime)}
+                onMouseEnter={() => setShowTime(true)}
+                onMouseLeave={() => setShowTime(false)}
+            >
+                <button
+                    type="button"
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer transition-colors"
+                    title={timeStr}
+                >
+                    <Clock className="w-4 h-4 text-indigo-400" />
+                </button>
+                {showTime && (
+                    <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10 shadow-lg">
+                        {timeStr}
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+}
+
 interface BinProps {
     bin: BinType;
     showModal?: boolean;
@@ -25,7 +56,6 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
 
     const [isEditing, setIsEditing] = useState(false);
     const [editItems, setEditItems] = useState<BinItem[]>([]);
-    const [showTime, setShowTime] = useState(false);
     const [showQr, setShowQr] = useState(false);
     const [showPhotoOcr, setShowPhotoOcr] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -171,12 +201,12 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
                                     <span className="font-bold text-2xl">{isEditing ? editItems.reduce((s, i) => s + i.quantity, 0) : totalQty}</span>
                                 </div>
 
-                                {/* SKU 列表 */}
+                                {/* 托盘上所有货物：SKU、数量、入库时间（时钟+悬停/点击显示）- 2026-02-27T08:40:00Z */}
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between mb-1">
                                         <div className="flex items-center gap-2 opacity-80 text-sm">
                                             <Package className="w-4 h-4" />
-                                            <span>SKU Items ({isEditing ? editItems.length : items.length})</span>
+                                            <span>SKU 列表 ({isEditing ? editItems.length : items.length})</span>
                                         </div>
                                         {isEditing && (
                                             <div className="flex gap-2">
@@ -224,10 +254,7 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
                                         ))
                                     ) : (
                                         items.length > 0 ? items.map((item, idx) => (
-                                            <div key={idx} className="bg-white/10 p-3 rounded-xl border border-white/10 flex items-center justify-between">
-                                                <span className="font-mono font-bold text-sm">{item.sku}</span>
-                                                <span className="font-bold text-lg text-indigo-300">{item.quantity}</span>
-                                            </div>
+                                            <SkuRowWithTime key={idx} sku={item.sku} quantity={item.quantity} inboundTime={bin.inboundTime} />
                                         )) : (
                                             <div className="bg-white/5 p-4 rounded-xl border border-white/5 text-center text-slate-500 italic">
                                                 Empty Bin
@@ -236,33 +263,7 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
                                     )}
                                 </div>
 
-                                {/* Time Section */}
-                                {bin.inboundTime && (
-                                    <div
-                                        className="bg-white/10 p-3 rounded-xl border border-white/10 flex flex-col space-y-1 cursor-pointer group mt-4"
-                                        onClick={() => setShowTime(!showTime)}
-                                    >
-                                        <div className="flex justify-between items-center">
-                                            <div className="flex items-center gap-2 opacity-80 text-sm">
-                                                <Clock className="w-4 h-4" />
-                                                <span>Inbound Time</span>
-                                            </div>
-                                            <Clock className="w-4 h-4 text-indigo-400 group-hover:text-indigo-300" />
-                                        </div>
-                                        <AnimatePresence>
-                                            {showTime && (
-                                                <motion.div
-                                                    initial={{ height: 0, opacity: 0 }}
-                                                    animate={{ height: "auto", opacity: 1 }}
-                                                    exit={{ height: 0, opacity: 0 }}
-                                                    className="text-sm font-mono text-indigo-200 pt-2"
-                                                >
-                                                    {new Date(bin.inboundTime).toLocaleString()}
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                )}
+                                {/* 入库时间已合并到每行 SKU 的时钟图标 */}
                             </motion.div>
                         </motion.div>
                     )}

@@ -1,4 +1,4 @@
-// Updated 2026-02-27T03:45:00Z - 在 DraggableDroppableBin 层面检测点击，绕过 DnD Kit 的 pointer capture/preventDefault 问题
+// Updated 2026-02-27T08:30:00Z - 修复点击/触屏：降低 click 阈值，优化 TouchSensor，增强 3D 立方体效果
 "use client";
 
 import { useState, useMemo, useRef, type PointerEvent as ReactPointerEvent } from "react";
@@ -50,7 +50,9 @@ function DraggableDroppableBin({ binId, col, row, layer }: { binId: string, col:
     const longPressTriggered = useRef(false);
 
     const handleMergedPointerDown = (e: ReactPointerEvent) => {
-        pointerStart.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+        const x = e.clientX;
+        const y = e.clientY;
+        pointerStart.current = { x, y, time: Date.now() };
         longPressTriggered.current = false;
 
         longPressTimer.current = setTimeout(() => {
@@ -82,7 +84,7 @@ function DraggableDroppableBin({ binId, col, row, layer }: { binId: string, col:
             const dx = e.clientX - pointerStart.current.x;
             const dy = e.clientY - pointerStart.current.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance < 10) {
+            if (distance < 12) {
                 if (isMultiSelecting) {
                     toggleBinSelection(binId);
                 } else {
@@ -107,6 +109,7 @@ function DraggableDroppableBin({ binId, col, row, layer }: { binId: string, col:
                 style={style}
                 onPointerDown={handleMergedPointerDown}
                 onPointerUp={handlePointerUp}
+                onPointerCancel={() => { pointerStart.current = null; if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
                 {...attributes}
                 className={clsx("w-full h-full", isDragging && "opacity-80 scale-105 cursor-grabbing")}
             >
@@ -132,19 +135,10 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
     const maxRow = Math.max(...aisleBins.map(b => b.row), 1);
     const maxLayer = Math.max(...aisleBins.map(b => b.layer), 1);
 
-    // DnD Sensors (distinguish between click and drag)
+    // DnD Sensors：鼠标 10px 移动激活拖拽；触屏 180ms 长按激活，tolerance 8 减少误触
     const sensors = useSensors(
-        useSensor(MouseSensor, {
-            activationConstraint: {
-                distance: 10, // Drag requires 10px moving to start, allowing clicks to pass through
-            },
-        }),
-        useSensor(TouchSensor, {
-            activationConstraint: {
-                delay: 250,
-                tolerance: 5,
-            },
-        })
+        useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } })
     );
 
     const handleDragEnd = async (event: DragEndEvent) => {
@@ -196,35 +190,40 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
 
             <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
                 {/* Main visually transformable container */}
-                <div className="relative w-full overflow-hidden min-h-[400px] flex items-center justify-center bg-slate-100 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 [perspective:2000px]">
+                <div className="relative w-full overflow-hidden min-h-[400px] flex items-center justify-center bg-slate-100 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 [perspective:1200px]">
 
                     <motion.div
                         layout
                         animate={{
-                            rotateX: is3D ? 50 : 0,
-                            rotateZ: is3D ? -25 : 0,
-                            scale: is3D ? 0.7 : 1,
+                            rotateX: is3D ? 55 : 0,
+                            rotateZ: is3D ? -28 : 0,
+                            scale: is3D ? 0.85 : 1,
                         }}
                         transition={{ duration: 0.8, type: "spring", bounce: 0.1 }}
-                        className="flex flex-col gap-6 transform-gpu [transform-style:preserve-3d] w-full"
+                        className="flex flex-col gap-4 transform-gpu [transform-style:preserve-3d] w-full"
                     >
-                        {/* Render layers side by side or stacked based on 3D */}
+                        {/* 3D 立方体效果：每层有明显 Z 间隔、阴影与边框 */}
                         {Array.from({ length: maxLayer }).map((_, layerIdx) => {
                             const layer = layerIdx + 1;
+                            const zDepth = is3D ? (layer - 1) * 80 : 0;
+                            const yOffset = is3D ? (layer - 1) * -20 : 0;
                             return (
                                 <motion.div
                                     layout
                                     key={layer}
                                     animate={{
-                                        translateZ: is3D ? (layer - 1) * 50 : 0,
-                                        y: is3D ? (layer - 1) * -12 : 0,
+                                        translateZ: zDepth,
+                                        y: yOffset,
                                     }}
                                     className={clsx(
-                                        "grid gap-1.5 border-2 border-slate-300 dark:border-slate-700 p-3 pt-5 rounded-xl shadow-lg bg-white/70 dark:bg-slate-800/80 backdrop-blur-md transition-all transform-gpu",
-                                        is3D && "shadow-xl"
+                                        "grid gap-1.5 border-2 p-3 pt-5 rounded-xl transition-all transform-gpu [transform-style:preserve-3d]",
+                                        is3D
+                                            ? "border-indigo-400/60 bg-gradient-to-b from-indigo-500/20 to-slate-800/90 shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
+                                            : "border-slate-300 dark:border-slate-700 shadow-lg bg-white/70 dark:bg-slate-800/80 backdrop-blur-md"
                                     )}
                                     style={{
-                                        gridTemplateColumns: `repeat(${maxRow}, minmax(0, 1fr))`
+                                        gridTemplateColumns: `repeat(${maxRow}, minmax(0, 1fr))`,
+                                        ...(is3D && { boxShadow: `0 ${10 + layer * 6}px ${20 + layer * 8}px rgba(0,0,0,0.35)` }),
                                     }}
                                 >
                                     <div className="absolute -top-3 left-4 bg-slate-800 text-white px-2 py-0.5 rounded text-xs font-bold z-10">
