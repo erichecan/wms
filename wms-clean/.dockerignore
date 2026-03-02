@@ -1,0 +1,16 @@
+# Docker 构建忽略
+.git
+.gitignore
+.next
+node_modules
+.env
+.env.*
+*.log
+e2e
+playwright.config.ts
+*.spec.ts
+*.test.ts
+playwright-report
+test-results
+.gcloudignore
+test-db.ts

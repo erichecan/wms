@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 
-const DB_URL = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL || "";
+const DB_URL = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL || "postgresql://neondb_owner:npg_NqtkoQb4fK5O@ep-restless-cell-ai4zek6b-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require";
 const sql = neon(DB_URL);
 
 export async function POST(request: Request) {
