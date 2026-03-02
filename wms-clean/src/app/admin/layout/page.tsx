@@ -1,7 +1,7 @@
 // Updated 2026-02-27T08:45:00Z - admin layout 支持拖拽 bin 方块移动货物
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { ArrowLeft, X, Layers, GripVertical, Edit2, Check, Plus, Trash2, Camera } from "lucide-react";
 import { SkuPhotoOcr } from "@/components/SkuPhotoOcr";
 import { useRouter } from "next/navigation";
@@ -443,17 +443,15 @@ export default function AdminLayoutPage() {
         if (colName !== dragAisle) setDragOverAisle(colName);
     };
 
-    const handleDrop = (colName: string) => {
-        if (dragAisle && dragAisle !== colName) {
-            const newOrder = [...orderedAisleNames];
-            const fromIdx = newOrder.indexOf(dragAisle);
-            const toIdx = newOrder.indexOf(colName);
-            if (fromIdx >= 0 && toIdx >= 0) {
-                newOrder.splice(fromIdx, 1);
-                newOrder.splice(toIdx, 0, dragAisle);
-                setAisleOrder(newOrder);
-            }
-        }
+    const handleDropAtIndex = (toIdx: number) => {
+        if (!dragAisle) return;
+        const newOrder = [...orderedAisleNames];
+        const fromIdx = newOrder.indexOf(dragAisle);
+        if (fromIdx < 0) return;
+        newOrder.splice(fromIdx, 1);
+        const adjustedTo = toIdx > fromIdx ? toIdx - 1 : toIdx;
+        newOrder.splice(Math.max(0, Math.min(adjustedTo, newOrder.length)), 0, dragAisle);
+        setAisleOrder(newOrder);
         setDragAisle(null);
         setDragOverAisle(null);
     };
@@ -461,26 +459,39 @@ export default function AdminLayoutPage() {
     const handleDragEnd = () => {
         setDragAisle(null);
         setDragOverAisle(null);
+        setDragOverSlot(null);
     };
 
-    // Updated 2026-02-27T04:12:00Z - 容器级 onDragOver 允许跨左右区域拖放
-    const renderStorageBlock = (aisleCols: string[]) => (
+    const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
+
+    const DropSlot = ({ index }: { index: number }) => (
         <div
-            className="flex flex-col gap-3 w-full"
-            onDragOver={(e) => e.preventDefault()}
-        >
-            {aisleCols.map(colName => {
+            className={clsx(
+                "min-h-[24px] rounded border-2 border-dashed transition-all flex-shrink-0",
+                dragOverSlot === index ? "border-emerald-500 bg-emerald-500/20" : "border-slate-600/30 hover:border-slate-500/50"
+            )}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverSlot(index); setDragOverAisle(null); }}
+            onDragLeave={() => setDragOverSlot(null)}
+            onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleDropAtIndex(index); setDragOverSlot(null); }}
+        />
+    );
+
+    const renderStorageBlock = (aisleCols: string[], startIdx: number) => (
+        <div className="flex flex-col gap-1 w-full" onDragOver={(e) => e.preventDefault()}>
+            <DropSlot index={startIdx} />
+            {aisleCols.map((colName, i) => {
                 const stacks = storageAisles[colName] || [];
                 stacks.sort((a, b) => a.row - b.row);
                 const isDragging = dragAisle === colName;
                 const isDragOver = dragOverAisle === colName;
+                const dropIdx = startIdx + i;
                 return (
+                    <Fragment key={colName}>
                     <div
-                        key={colName}
                         draggable
                         onDragStart={() => handleDragStart(colName)}
-                        onDragOver={(e) => handleDragOver(e, colName)}
-                        onDrop={() => handleDrop(colName)}
+                        onDragOver={(e) => { e.preventDefault(); if (colName !== dragAisle) setDragOverAisle(colName); setDragOverSlot(null); }}
+                        onDrop={(e) => { e.preventDefault(); handleDropAtIndex(dropIdx); setDragOverAisle(null); }}
                         onDragEnd={handleDragEnd}
                         className={clsx(
                             "flex flex-row items-center border rounded-lg bg-white dark:bg-slate-800 p-2 shadow-sm transition-all cursor-grab active:cursor-grabbing",
@@ -497,6 +508,8 @@ export default function AdminLayoutPage() {
                             {stacks.map(st => renderStackSquare(st))}
                         </div>
                     </div>
+                    <DropSlot index={startIdx + i + 1} />
+                    </Fragment>
                 );
             })}
         </div>
@@ -548,22 +561,10 @@ export default function AdminLayoutPage() {
                         {/* Main Floor Zones with Center Aisle */}
                         <div className="flex w-full relative min-h-[500px]">
 
-                            {/* Updated 2026-02-27T04:12:00Z - 左右区域容器支持跨区域 drop */}
+                            {/* 2026-02-27T09:00:00Z - 支持任意位置放置，左右+上下均可拖拽 */}
                             {/* Left Storage */}
-                            <div
-                                className="w-[42%] flex justify-end pr-4"
-                                onDragOver={(e) => e.preventDefault()}
-                                onDrop={() => {
-                                    if (dragAisle && !orderedLeftAisles.includes(dragAisle)) {
-                                        const newOrder = orderedAisleNames.filter(a => a !== dragAisle);
-                                        newOrder.splice(orderedMidPoint - 1, 0, dragAisle);
-                                        setAisleOrder(newOrder);
-                                        setDragAisle(null);
-                                        setDragOverAisle(null);
-                                    }
-                                }}
-                            >
-                                {renderStorageBlock(orderedLeftAisles)}
+                            <div className="w-[42%] flex justify-end pr-4" onDragOver={(e) => e.preventDefault()}>
+                                {renderStorageBlock(orderedLeftAisles, 0)}
                             </div>
 
                             {/* Center Main Aisle */}
@@ -575,26 +576,14 @@ export default function AdminLayoutPage() {
                             </div>
 
                             {/* Right Storage */}
-                            {/* 从左边拖到右侧空白时，插入到右侧第一个位置而非末尾 - 2026-02-27T08:35:00Z */}
-                            <div
-                                className="w-[42%] flex justify-start pl-4 pt-20"
-                                onDragOver={(e) => e.preventDefault()}
-                                onDrop={() => {
-                                    if (dragAisle && !orderedRightAisles.includes(dragAisle)) {
-                                        const newOrder = orderedAisleNames.filter(a => a !== dragAisle);
-                                        newOrder.splice(orderedMidPoint, 0, dragAisle);
-                                        setAisleOrder(newOrder);
-                                        setDragAisle(null);
-                                        setDragOverAisle(null);
-                                    }
-                                }}
-                            >
-                                {renderStorageBlock(orderedRightAisles)}
+                            {/* Right Storage */}
+                            <div className="w-[42%] flex justify-start pl-4 pt-20" onDragOver={(e) => e.preventDefault()}>
+                                {renderStorageBlock(orderedRightAisles, orderedMidPoint)}
                             </div>
                         </div>
 
                         <p className="text-center text-xs text-slate-500 mt-2">
-                            拖拽通道列可调整左右布局；拖拽 bin 方块可移动货物
+                            通道列：拖拽到任意位置（左右+上下）；bin 方块：拖拽可移动货物
                         </p>
                     </div>
                 )}
