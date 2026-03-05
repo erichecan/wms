@@ -15,6 +15,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+# 构建时需提供占位 DATABASE_URL，否则 neon() 在收集页面数据时会抛错
+ENV DATABASE_URL=postgresql://build:build@localhost/build
 RUN npm run build
 
 FROM node:${NODE_VERSION}-slim AS runner
