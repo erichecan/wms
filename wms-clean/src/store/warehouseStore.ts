@@ -9,7 +9,7 @@ export interface BinItem {
 export interface Bin {
     id: string; // e.g. K1-L1-R1
     col: string; // K1, K2, K3, K4
-    layer: number; // 1, 2, 3 (bottom to top)
+    rack: number; // 1, 2, 3 (bottom to top, 货架)
     row: number; // e.g. 1 to 10
     sku: string | null; // 兼容旧数据：主 SKU
     quantity: number; // 兼容旧数据：总数量
@@ -51,7 +51,7 @@ export interface WarehouseState {
     selectBin: (id: string) => void;
     toggleBinSelection: (id: string) => void;
     clearSelection: () => void;
-    moveBinContents: (sourceIds: string[], targetCol: string, targetRow: number, targetLayer: number) => void;
+    moveBinContents: (sourceIds: string[], targetCol: string, targetRow: number, targetRack: number) => void;
     pendingSkuMove: { sourceBinId: string; sku: string; quantity: number } | null;
     setPendingSkuMove: (p: { sourceBinId: string; sku: string; quantity: number } | null) => void;
     moveSkuToBin: (sourceBinId: string, sku: string, qty: number, targetBinId: string) => void;
@@ -123,20 +123,20 @@ export const useWarehouseStore = create<WarehouseState>((set, get) => ({
     clearSelection: () => set({ selectedBinIds: [] }),
 
     // Updated 2026-02-27T05:15:00Z - 支持多选批量移动、items 数组合并，移动后持久化
-    moveBinContents: (sourceIds, targetCol, targetRow, targetLayer) => {
+    moveBinContents: (sourceIds, targetCol, targetRow, targetRack) => {
         const toPersist: { id: string; updates: Partial<Bin> }[] = [];
         let targetIdForLog = "";
-        const targetBinId = `${targetCol}-L${targetLayer}-R${targetRow}`;
+        const targetBinId = `${targetCol}-L${targetRack}-R${targetRow}`;
 
         set((state) => {
             const newBins = state.bins.map(b => ({ ...b, items: [...(b.items || [])] }));
-            let targetBin = newBins.find(b => b.col === targetCol && b.row === targetRow && b.layer === targetLayer);
+            let targetBin = newBins.find(b => b.col === targetCol && b.row === targetRow && b.rack === targetRack);
             if (!targetBin) {
                 targetBin = {
                     id: targetBinId,
                     col: targetCol,
                     row: targetRow,
-                    layer: targetLayer,
+                    rack: targetRack,
                     sku: null,
                     quantity: 0,
                     items: [],
@@ -222,7 +222,7 @@ export const useWarehouseStore = create<WarehouseState>((set, get) => ({
 
             if (!targetBin) {
                 const m = targetBinId.match(/^([A-Za-z0-9]+)-L(\d+)-R(\d+)$/);
-                targetBin = { id: targetBinId, col: m?.[1] ?? "K1", row: parseInt(m?.[3] ?? "1", 10), layer: parseInt(m?.[2] ?? "1", 10), sku: null, quantity: 0, items: [], inboundTime: null };
+                targetBin = { id: targetBinId, col: m?.[1] ?? "K1", row: parseInt(m?.[3] ?? "1", 10), rack: parseInt(m?.[2] ?? "1", 10), sku: null, quantity: 0, items: [], inboundTime: null };
                 newBins.push(targetBin);
             }
 

@@ -32,7 +32,7 @@ export default function AislePage() {
                     <div className="flex items-center gap-3 shrink-0">
                     <button
                         onClick={() => router.push("/")}
-                        className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                        className="flex items-center gap-2 text-zinc-500 hover:text-[#D94828] transition-colors cursor-pointer"
                     >
                         <ArrowLeft className="w-5 h-5" />
                         Back to Home

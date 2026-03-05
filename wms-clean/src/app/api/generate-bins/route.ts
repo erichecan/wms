@@ -14,18 +14,18 @@ export async function POST() {
         for (const rowObj of dbAisles) {
             const aisleCol = (rowObj as any).col;
             const maxRowRecord = await sql`SELECT row FROM "Bin" WHERE col = ${aisleCol} ORDER BY row DESC LIMIT 1`;
-            const maxLayerRecord = await sql`SELECT layer FROM "Bin" WHERE col = ${aisleCol} ORDER BY layer DESC LIMIT 1`;
+            const maxLayerRecord = await sql`SELECT rack FROM "Bin" WHERE col = ${aisleCol} ORDER BY rack DESC LIMIT 1`;
 
             if (maxRowRecord.length > 0 && maxLayerRecord.length > 0) {
                 const maxRow = (maxRowRecord[0] as any).row;
-                const maxLayer = (maxLayerRecord[0] as any).layer;
+                const maxLayer = (maxLayerRecord[0] as any).rack;
 
                 for (let r = 1; r <= maxRow; r++) {
                     for (let l = 1; l <= maxLayer; l++) {
                         const binId = `${aisleCol}-L${l}-R${r}`;
                         // We use INSERT ... ON CONFLICT DO NOTHING natively
                         queries.push(
-                            sql`INSERT INTO "Bin" (id, col, row, layer, quantity, sku, "updatedAt") 
+                            sql`INSERT INTO "Bin" (id, col, row, rack, quantity, sku, "updatedAt") 
                                 VALUES (${binId}, ${aisleCol}, ${r}, ${l}, 0, NULL, NOW()) 
                                 ON CONFLICT (id) DO NOTHING`
                         );

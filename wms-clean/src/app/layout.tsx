@@ -12,11 +12,18 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en">
-            <body className="antialiased bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 min-h-screen">
+        <html lang="zh-CN">
+            <head>
+                <link rel="preconnect" href="https://fonts.googleapis.com" />
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+            </head>
+            <body className="antialiased bg-white dark:bg-zinc-950 text-black dark:text-zinc-100 min-h-screen font-sans">
                 <main className="flex flex-col min-h-screen">
-                    <nav className="glass sticky top-0 z-50 p-4 shadow-sm flex items-center justify-between">
-                        <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">WMS Pro</h1>
+                    <nav className="glass sticky top-0 z-50 px-6 py-4 shadow-sm flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800">
+                        <h1 className="text-xl font-bold tracking-tight text-black dark:text-white">
+                            <span className="text-[#D94828]">W</span>MS Pro
+                        </h1>
                     </nav>
                     {children}
                 </main>

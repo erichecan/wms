@@ -12,13 +12,13 @@ export async function GET() {
         for (const row of dbAisles) {
             const aisleCol = (row as any).col;
             const maxRowRecord = await sql`SELECT row FROM "Bin" WHERE col = ${aisleCol} ORDER BY row DESC LIMIT 1`;
-            const maxLayerRecord = await sql`SELECT layer FROM "Bin" WHERE col = ${aisleCol} ORDER BY layer DESC LIMIT 1`;
+            const maxLayerRecord = await sql`SELECT rack FROM "Bin" WHERE col = ${aisleCol} ORDER BY rack DESC LIMIT 1`;
 
             if (maxRowRecord.length > 0 && maxLayerRecord.length > 0) {
                 layoutData.push({
                     id: aisleCol,
                     maxRow: (maxRowRecord[0] as any).row,
-                    maxLayer: (maxLayerRecord[0] as any).layer,
+                    maxLayer: (maxLayerRecord[0] as any).rack,
                 });
             }
         }

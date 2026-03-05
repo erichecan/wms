@@ -18,7 +18,7 @@ interface BinStack {
 // Updated 2026-02-27T04:35:00Z - 弹窗表格组件：展示 SKU/数量/入库时间，可编辑
 interface EditRow {
     binId: string;
-    layer: number;
+    rack: number;
     itemIdx: number;
     sku: string;
     quantity: number;
@@ -31,7 +31,7 @@ function StackDetailModal({ stack, onClose }: { stack: BinStack; onClose: () => 
     const [showPhotoOcr, setShowPhotoOcr] = useState(false);
 
     const allRows = [...stack.bins].reverse().flatMap(bin => {
-        const layerLetter = String.fromCharCode(64 + bin.layer);
+        const rackLetter = String.fromCharCode(64 + bin.rack);
         const items: BinItem[] = Array.isArray(bin.items) && bin.items.length > 0
             ? bin.items
             : bin.sku ? [{ sku: bin.sku, quantity: bin.quantity }] : [];
@@ -39,9 +39,9 @@ function StackDetailModal({ stack, onClose }: { stack: BinStack; onClose: () => 
         if (items.length === 0) {
             return [{
                 binId: bin.id,
-                layer: bin.layer,
-                layerLetter,
-                displayId: `${bin.col}-${bin.row}-${layerLetter}`,
+                rack: bin.rack,
+                rackLetter,
+                displayId: `${bin.col}-${bin.row}-${rackLetter}`,
                 sku: "",
                 quantity: 0,
                 inboundTime: bin.inboundTime,
@@ -52,9 +52,9 @@ function StackDetailModal({ stack, onClose }: { stack: BinStack; onClose: () => 
 
         return items.map((item, idx) => ({
             binId: bin.id,
-            layer: bin.layer,
-            layerLetter,
-            displayId: `${bin.col}-${bin.row}-${layerLetter}`,
+            rack: bin.rack,
+            rackLetter,
+            displayId: `${bin.col}-${bin.row}-${rackLetter}`,
             sku: item.sku,
             quantity: item.quantity,
             inboundTime: bin.inboundTime,
@@ -66,7 +66,7 @@ function StackDetailModal({ stack, onClose }: { stack: BinStack; onClose: () => 
     const startEditing = () => {
         setEditRows(allRows.map(r => ({
             binId: r.binId,
-            layer: r.layer,
+            rack: r.rack,
             itemIdx: r.itemIdx,
             sku: r.sku,
             quantity: r.quantity,
@@ -112,8 +112,8 @@ function StackDetailModal({ stack, onClose }: { stack: BinStack; onClose: () => 
         ));
     };
 
-    const addEditRow = (binId: string, layer: number) => {
-        setEditRows(prev => [...prev, { binId, layer, itemIdx: prev.length, sku: "", quantity: 0 }]);
+    const addEditRow = (binId: string, rack: number) => {
+        setEditRows(prev => [...prev, { binId, rack, itemIdx: prev.length, sku: "", quantity: 0 }]);
     };
 
     const removeEditRow = (idx: number) => {
@@ -182,12 +182,12 @@ function StackDetailModal({ stack, onClose }: { stack: BinStack; onClose: () => 
                         <tbody className="divide-y divide-slate-800">
                             {isEditing ? (
                                 editRows.map((row, idx) => {
-                                    const layerLetter = String.fromCharCode(64 + row.layer);
+                                    const rackLetter = String.fromCharCode(64 + row.rack);
                                     const matchedBin = stack.bins.find(b => b.id === row.binId);
                                     return (
                                         <tr key={idx} className="hover:bg-slate-800/40 transition-colors">
                                             <td className="py-2 px-4">
-                                                <span className="inline-flex items-center justify-center w-7 h-7 rounded bg-slate-700 text-slate-300 font-bold text-xs">{layerLetter}</span>
+                                                <span className="inline-flex items-center justify-center w-7 h-7 rounded bg-slate-700 text-slate-300 font-bold text-xs">{rackLetter}</span>
                                             </td>
                                             <td className="py-2 px-4">
                                                 <input
@@ -224,7 +224,7 @@ function StackDetailModal({ stack, onClose }: { stack: BinStack; onClose: () => 
                                             <span className={clsx(
                                                 "inline-flex items-center justify-center w-7 h-7 rounded font-bold text-xs",
                                                 row.isEmpty ? "bg-slate-800 text-slate-600" : "bg-indigo-600/30 text-indigo-300 border border-indigo-500/30"
-                                            )}>{row.layerLetter}</span>
+                                            )}>{row.rackLetter}</span>
                                         </td>
                                         <td className="py-2.5 px-4">
                                             {row.isEmpty
@@ -251,11 +251,11 @@ function StackDetailModal({ stack, onClose }: { stack: BinStack; onClose: () => 
                         <div className="p-3 border-t border-slate-800 space-y-3">
                             <div className="flex flex-wrap gap-2">
                                 {[...stack.bins].reverse().map(bin => {
-                                    const ll = String.fromCharCode(64 + bin.layer);
+                                    const ll = String.fromCharCode(64 + bin.rack);
                                     return (
                                         <button
                                             key={bin.id}
-                                            onClick={() => addEditRow(bin.id, bin.layer)}
+                                            onClick={() => addEditRow(bin.id, bin.rack)}
                                             className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-2.5 py-1.5 rounded-lg transition-colors"
                                         >
                                             <Plus className="w-3 h-3" /> 添加到 {ll} 层
@@ -276,7 +276,7 @@ function StackDetailModal({ stack, onClose }: { stack: BinStack; onClose: () => 
                                         if (first) {
                                             setEditRows(prev => [...prev, ...extracted.filter(i => i.sku.trim()).map((it, i) => ({
                                                 binId: first.id,
-                                                layer: first.layer,
+                                                rack: first.rack,
                                                 itemIdx: prev.length + i,
                                                 sku: it.sku,
                                                 quantity: it.quantity,
@@ -329,9 +329,9 @@ export default function AdminLayoutPage() {
         if (b.quantity > 0) stack.hasItems = true;
     });
 
-    // Ensure layers in each stack are sorted bottom-to-top or numerically
+    // Ensure racks in each stack are sorted bottom-to-top or numerically
     stacksMap.forEach(stack => {
-        stack.bins.sort((a, b) => a.layer - b.layer);
+        stack.bins.sort((a, b) => a.rack - b.rack);
     });
 
     // Separate Stacks into Storage (row <= 13) and Staging (row > 13)
@@ -393,7 +393,7 @@ export default function AdminLayoutPage() {
                                 const firstTarget = stack.bins[0];
                                 if (srcStack && firstTarget && srcStack.bins.some(b => b.quantity > 0)) {
                                     const sourceIds = srcStack.bins.map(b => b.id);
-                                    moveBinContents(sourceIds, firstTarget.col, firstTarget.row, firstTarget.layer);
+                                    moveBinContents(sourceIds, firstTarget.col, firstTarget.row, firstTarget.rack);
                                 }
                             }
                         } catch (_) { /* ignore */ }

@@ -38,7 +38,7 @@ export function MoveLogPanel() {
         <>
             <button
                 onClick={() => setOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-200/80 dark:bg-zinc-700/80 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-700 dark:text-zinc-300 transition-colors duration-200 cursor-pointer"
                 title="库位变更记录"
             >
                 <History className="w-5 h-5" />
@@ -63,7 +63,7 @@ export function MoveLogPanel() {
                         >
                             <div className="flex items-center justify-between p-4 border-b border-white/10">
                                 <h3 className="text-lg font-bold flex items-center gap-2">
-                                    <History className="w-5 h-5 text-indigo-400" />
+                                    <History className="w-5 h-5 text-[#D94828]" />
                                     库位变更记录
                                 </h3>
                                 <button
@@ -75,9 +75,9 @@ export function MoveLogPanel() {
                             </div>
                             <div className="flex-1 overflow-y-auto p-4">
                                 {loading ? (
-                                    <div className="text-center py-8 text-slate-400">加载中...</div>
+                                    <div className="text-center py-8 text-zinc-400">加载中...</div>
                                 ) : logs.length === 0 ? (
-                                    <div className="text-center py-8 text-slate-500">暂无变更记录</div>
+                                    <div className="text-center py-8 text-zinc-500">暂无变更记录</div>
                                 ) : (
                                     <ul className="space-y-3">
                                         {logs.map((entry) => (
@@ -86,13 +86,13 @@ export function MoveLogPanel() {
                                                 className="bg-white/5 rounded-xl p-3 border border-white/10 text-sm"
                                             >
                                                 <div className="flex flex-wrap items-center gap-2">
-                                                    <span className="font-mono text-amber-400">
+                                                    <span className="font-mono text-[#D94828]">
                                                         {Array.isArray(entry.sourceIds) ? entry.sourceIds.join(", ") : String(entry.sourceIds)}
                                                     </span>
-                                                    <span className="text-slate-400">→</span>
-                                                    <span className="font-mono text-emerald-400">{entry.targetId}</span>
+                                                    <span className="text-zinc-400">→</span>
+                                                    <span className="font-mono text-zinc-600 dark:text-zinc-300">{entry.targetId}</span>
                                                 </div>
-                                                <div className="mt-1 text-xs text-slate-500">
+                                                <div className="mt-1 text-xs text-zinc-500">
                                                     {new Date(entry.movedAt).toLocaleString("zh-CN")}
                                                 </div>
                                             </li>

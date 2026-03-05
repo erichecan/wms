@@ -10,7 +10,7 @@ import { DndContext, type DragEndEvent, MouseSensor, TouchSensor, useSensor, use
 import { useDroppable, useDraggable } from "@dnd-kit/core";
 
 // 2026-02-27 选择目标模式：点击 bin 时若 pendingSkuMove 存在则执行 moveSkuToBin
-function DraggableDroppableBin({ binId, col, row, layer }: { binId: string, col: string, row: number, layer: number }) {
+function DraggableDroppableBin({ binId, col, row, rack }: { binId: string, col: string, row: number, rack: number }) {
     const existingBin = useWarehouseStore(s => s.bins.find(b => b.id === binId));
     const selectBin = useWarehouseStore(s => s.selectBin);
     const toggleBinSelection = useWarehouseStore(s => s.toggleBinSelection);
@@ -25,7 +25,7 @@ function DraggableDroppableBin({ binId, col, row, layer }: { binId: string, col:
         id: binId,
         col,
         row,
-        layer,
+        rack,
         sku: null,
         quantity: 0,
         items: [],
@@ -111,8 +111,8 @@ function DraggableDroppableBin({ binId, col, row, layer }: { binId: string, col:
             ref={setDropRef}
             className={clsx(
                 "relative rounded-lg transition-colors",
-                isOver && "ring-2 ring-emerald-500 bg-emerald-500/20",
-                isSelectTargetMode && binId !== pendingSkuMove?.sourceBinId && "ring-2 ring-amber-400/60 bg-amber-500/10"
+                isOver && "ring-2 ring-[#D94828] bg-[#D94828]/20",
+                isSelectTargetMode && binId !== pendingSkuMove?.sourceBinId && "ring-2 ring-[#D94828]/60 bg-[#D94828]/10"
             )}
         >
             <div
@@ -144,9 +144,9 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
     // For simplicity, let's say an aisle maps exactly to a col string like "K1"
     const aisleBins = useMemo(() => bins.filter(b => b.col === aisleId), [bins, aisleId]);
 
-    // Max rows and layers to generate the grid
+    // Max rows and racks to generate the grid
     const maxRow = Math.max(...aisleBins.map(b => b.row), 1);
-    const maxLayer = Math.max(...aisleBins.map(b => b.layer), 1);
+    const maxRack = Math.max(...aisleBins.map(b => b.rack), 1);
 
     // 2026-02-27T09:35:00Z - 触屏 1100ms 长按先触发多选，再移动才拖拽
     const sensors = useSensors(
@@ -164,7 +164,7 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
         if (sourceBin && targetBin && sourceBin.id !== targetBin.id) {
             // Determine what to move. If source is in selection, move all selection. Else move just source.
             const idsToMove = selectedBinIds.includes(sourceBin.id) ? selectedBinIds : [sourceBin.id];
-            moveBinContents(idsToMove, targetBin.col, targetBin.row, targetBin.layer);
+            moveBinContents(idsToMove, targetBin.col, targetBin.row, targetBin.rack);
 
             // Trigger Email API
             try {
@@ -176,7 +176,7 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
                         sourceIds: idsToMove,
                         targetCol: targetBin.col,
                         targetRow: targetBin.row,
-                        targetLayer: targetBin.layer
+                        targetRack: targetBin.rack
                     })
                 });
             } catch (err) {
@@ -194,7 +194,7 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
                     onClick={() => setIs3D(!is3D)}
                     className={clsx(
                         "px-4 py-2 rounded-lg font-medium transition-all",
-                        is3D ? "bg-indigo-500 text-white shadow-md" : "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700"
+                        is3D ? "bg-[#D94828] text-white shadow-md" : "bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-700"
                     )}
                 >
                     {is3D ? "2D Plan View" : "3D Perspective (斜视图)"}
@@ -202,13 +202,13 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
             </div>
 
             {pendingSkuMove && (
-                <div className="flex items-center justify-between gap-4 p-3 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-800 dark:text-amber-200">
+                <div className="flex items-center justify-between gap-4 p-3 rounded-xl bg-[#D94828]/10 border border-[#D94828]/30 text-zinc-800 dark:text-zinc-200">
                     <span className="font-medium">
-                        选择目标库位：将 SKU <code className="font-mono font-bold px-1 rounded bg-amber-500/30">{pendingSkuMove.sku}</code> × {pendingSkuMove.quantity} 移动到其他托盘
+                        选择目标库位：将 SKU <code className="font-mono font-bold px-1 rounded bg-[#D94828]/20">{pendingSkuMove.sku}</code> × {pendingSkuMove.quantity} 移动到其他托盘
                     </span>
                     <button
                         onClick={() => setPendingSkuMove(null)}
-                        className="px-3 py-1.5 rounded-lg bg-slate-500/30 hover:bg-slate-500/50 text-slate-700 dark:text-slate-300 transition-colors"
+                        className="px-3 py-1.5 rounded-lg bg-zinc-500/30 hover:bg-zinc-500/50 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
                     >
                         取消
                     </button>
@@ -217,7 +217,7 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
 
             <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
                 {/* Main visually transformable container */}
-                <div className="relative w-full overflow-hidden min-h-[400px] flex items-center justify-center bg-slate-100 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 [perspective:1200px]">
+                <div className="relative w-full overflow-hidden min-h-[400px] flex items-center justify-center bg-zinc-100 dark:bg-zinc-900/50 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 [perspective:1200px]">
 
                     <motion.div
                         layout
@@ -230,14 +230,14 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
                         className="flex flex-col gap-4 transform-gpu [transform-style:preserve-3d] w-full"
                     >
                         {/* 3D 立方体效果：每层有明显 Z 间隔、阴影与边框 */}
-                        {Array.from({ length: maxLayer }).map((_, layerIdx) => {
-                            const layer = layerIdx + 1;
-                            const zDepth = is3D ? (layer - 1) * 80 : 0;
-                            const yOffset = is3D ? (layer - 1) * -20 : 0;
+                        {Array.from({ length: maxRack }).map((_, rackIdx) => {
+                            const rackNum = rackIdx + 1;
+                            const zDepth = is3D ? (rackNum - 1) * 80 : 0;
+                            const yOffset = is3D ? (rackNum - 1) * -20 : 0;
                             return (
                                 <motion.div
                                     layout
-                                    key={layer}
+                                    key={rackNum}
                                     animate={{
                                         translateZ: zDepth,
                                         y: yOffset,
@@ -245,22 +245,22 @@ export function AisleGrid({ aisleId }: { aisleId: string }) {
                                     className={clsx(
                                         "grid gap-1.5 border-2 p-3 pt-5 rounded-xl transition-all transform-gpu [transform-style:preserve-3d]",
                                         is3D
-                                            ? "border-indigo-400/60 bg-gradient-to-b from-indigo-500/20 to-slate-800/90 shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
-                                            : "border-slate-300 dark:border-slate-700 shadow-lg bg-white/70 dark:bg-slate-800/80 backdrop-blur-md"
+                                            ? "border-[#D94828]/60 bg-gradient-to-b from-[#D94828]/20 to-zinc-800/90 shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
+                                            : "border-zinc-300 dark:border-zinc-700 shadow-lg bg-white/70 dark:bg-zinc-800/80 backdrop-blur-md"
                                     )}
                                     style={{
                                         gridTemplateColumns: `repeat(${maxRow}, minmax(0, 1fr))`,
-                                        ...(is3D && { boxShadow: `0 ${10 + layer * 6}px ${20 + layer * 8}px rgba(0,0,0,0.35)` }),
+                                        ...(is3D && { boxShadow: `0 ${10 + rackNum * 6}px ${20 + rackNum * 8}px rgba(0,0,0,0.35)` }),
                                     }}
                                 >
-                                    <div className="absolute -top-3 left-4 bg-slate-800 text-white px-2 py-0.5 rounded text-xs font-bold z-10">
-                                        Layer {layer}
+                                    <div className="absolute -top-3 left-4 bg-zinc-800 text-white px-2 py-0.5 rounded text-xs font-bold z-10">
+                                        Rack {rackNum}
                                     </div>
 
                                     {Array.from({ length: maxRow }).map((_, rowIdx) => {
                                         const row = rowIdx + 1;
-                                        const binId = `${aisleId}-L${layer}-R${row}`;
-                                        return <DraggableDroppableBin key={binId} binId={binId} col={aisleId} row={row} layer={layer} />;
+                                        const binId = `${aisleId}-L${rackNum}-R${row}`;
+                                        return <DraggableDroppableBin key={binId} binId={binId} col={aisleId} row={row} rack={rackNum} />;
                                     })}
                                 </motion.div>
                             );

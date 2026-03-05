@@ -7,11 +7,11 @@ datasource db {
   provider = "postgresql"
 }
 
-// Updated 2026-02-27T03:55:00Z - items JSON 字段支持一个 Bin 多个 SKU
+// Updated 2026-02-26T08:35:00Z - 货架 = rack
 model Bin {
   id          String    @id
   col         String
-  layer       Int
+  rack        Int
   row         Int
   sku         String?
   quantity    Int       @default(0)
@@ -19,7 +19,7 @@ model Bin {
   inboundTime DateTime? @default(now())
   updatedAt   DateTime  @updatedAt
 
-  @@index([col, row, layer])
+  @@index([col, row, rack])
 }
 
 // Updated 2026-02-27T05:18:00Z - 库位变化记录
@@ -35,4 +35,26 @@ model Product {
   name        String?
   description String?
   category    String?
+}
+
+// 2026-02-27 仓库人员排班
+model Personnel {
+  id   String @id @default(cuid())
+  name String
+  code String? // 工号
+  createdAt DateTime @default(now())
+}
+
+model ScheduleTask {
+  id           String   @id @default(cuid())
+  title        String
+  taskType     String   // 拣货|包装|收货|盘点|分货|整理库位
+  personnelIds Json     @default("[]") // ["id1","id2"]
+  startAt      DateTime
+  endAt        DateTime
+  status       String   @default("scheduled") // scheduled|in_progress|completed|cancelled
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([startAt, endAt])
 }

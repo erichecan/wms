@@ -24,7 +24,7 @@ test.describe("通道页 /aisle/K1", () => {
     test("显示通道 2D 图", async ({ page }) => {
         await expect(page.getByText("Back to Home")).toBeVisible();
         await expect(page.getByText(/Aisle K1/)).toBeVisible();
-        await expect(page.getByText("Layer 1")).toBeVisible({ timeout: 10000 });
+        await expect(page.getByText("Rack 1")).toBeVisible({ timeout: 10000 });
     });
 
     test("3D 视图切换按钮可见并可切换", async ({ page }) => {

@@ -45,38 +45,38 @@ export function SkuSearch() {
 
     return (
         <div ref={containerRef} className="relative">
-            <div className="flex items-center gap-2 bg-white/10 dark:bg-slate-800/80 rounded-lg border border-white/10 px-3 py-2">
-                <Search className="w-4 h-4 text-slate-400 shrink-0" />
+            <div className="flex items-center gap-2 bg-white/10 dark:bg-zinc-800/80 rounded-lg border border-white/10 px-3 py-2">
+                <Search className="w-4 h-4 text-zinc-400 shrink-0" />
                 <input
                     type="text"
                     value={query}
                     onChange={e => { setQuery(e.target.value); setExpanded(true); }}
                     onFocus={() => setExpanded(true)}
                     placeholder="搜索 SKU..."
-                    className="bg-transparent flex-1 min-w-[120px] text-sm focus:outline-none placeholder:text-slate-500"
+                    className="bg-transparent flex-1 min-w-[120px] text-sm focus:outline-none placeholder:text-zinc-500"
                 />
                 {query && (
                     <button onClick={() => { setQuery(""); setExpanded(false); }} className="p-1 hover:bg-white/10 rounded">
-                        <X className="w-3.5 h-3.5 text-slate-400" />
+                        <X className="w-3.5 h-3.5 text-zinc-400" />
                     </button>
                 )}
             </div>
             {expanded && (query.length >= 2) && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-xl max-h-[280px] overflow-y-auto z-50">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl max-h-[280px] overflow-y-auto z-50">
                     {matches.length === 0 ? (
-                        <div className="p-4 text-slate-500 text-sm text-center">未找到匹配的 SKU</div>
+                        <div className="p-4 text-zinc-500 text-sm text-center">未找到匹配的 SKU</div>
                     ) : (
                         <ul className="py-1">
                             {matches.map((m, i) => (
                                 <li key={`${m.binId}-${m.sku}-${i}`}>
                                     <button
                                         onClick={() => handleSelect(m.col)}
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-800/80 text-left transition-colors"
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-800/80 text-left transition-colors cursor-pointer"
                                     >
-                                        <Package className="w-4 h-4 text-indigo-400 shrink-0" />
+                                        <Package className="w-4 h-4 text-[#D94828] shrink-0" />
                                         <span className="font-mono font-semibold text-white truncate flex-1">{m.sku}</span>
-                                        <span className="text-indigo-400 font-bold shrink-0">{m.quantity}</span>
-                                        <span className="text-slate-500 text-xs shrink-0">{m.binId}</span>
+                                        <span className="text-[#D94828] font-bold shrink-0">{m.quantity}</span>
+                                        <span className="text-zinc-500 text-xs shrink-0">{m.binId}</span>
                                     </button>
                                 </li>
                             ))}
@@ -85,7 +85,7 @@ export function SkuSearch() {
                 </div>
             )}
             {expanded && !query && (
-                <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-slate-900/95 border border-slate-700 rounded-lg text-slate-500 text-xs z-50">
+                <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-zinc-900/95 border border-zinc-700 rounded-lg text-zinc-500 text-xs z-50">
                     输入 2 个字符以上搜索 SKU
                 </div>
             )}

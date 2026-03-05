@@ -49,9 +49,9 @@ export function LayoutBuilder() {
     const snapToGrid = (value: number) => Math.round(value / cellSize);
 
     return (
-        <div className="flex flex-col h-full bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-inner overflow-hidden">
+        <div className="flex flex-col h-full bg-zinc-100 dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-inner overflow-hidden">
             {/* Toolbar */}
-            <div className="glass flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+            <div className="glass flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2">
                         <label className="text-sm opacity-70 font-medium">Width (Cols):</label>
@@ -59,7 +59,7 @@ export function LayoutBuilder() {
                             type="number"
                             value={colsInput}
                             onChange={e => setColsInput(Number(e.target.value))}
-                            className="w-16 px-2 py-1 rounded bg-white dark:bg-slate-800 border-none outline-none ring-1 ring-slate-300 dark:ring-slate-700 focus:ring-indigo-500"
+                            className="w-16 px-2 py-1 rounded bg-white dark:bg-slate-800 border-none outline-none ring-1 ring-zinc-300 dark:ring-zinc-700 focus:ring-[#D94828]"
                         />
                     </div>
                     <div className="flex items-center gap-2">
@@ -68,12 +68,12 @@ export function LayoutBuilder() {
                             type="number"
                             value={rowsInput}
                             onChange={e => setRowsInput(Number(e.target.value))}
-                            className="w-16 px-2 py-1 rounded bg-white dark:bg-slate-800 border-none outline-none ring-1 ring-slate-300 dark:ring-slate-700 focus:ring-indigo-500"
+                            className="w-16 px-2 py-1 rounded bg-white dark:bg-slate-800 border-none outline-none ring-1 ring-zinc-300 dark:ring-zinc-700 focus:ring-[#D94828]"
                         />
                     </div>
                     <button
                         onClick={handleApplyDimensions}
-                        className="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded text-sm font-medium transition-colors"
+                        className="px-3 py-1.5 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 rounded text-sm font-medium transition-colors"
                     >
                         Apply Size
                     </button>
@@ -102,7 +102,7 @@ export function LayoutBuilder() {
             {/* Canvas */}
             <div className="flex-1 overflow-auto p-8 relative" ref={containerRef}>
                 <div
-                    className="relative bg-white dark:bg-slate-800 shadow-xl border border-slate-300 dark:border-slate-700 mx-auto"
+                    className="relative bg-white dark:bg-zinc-800 shadow-xl border border-zinc-300 dark:border-zinc-700 mx-auto"
                     style={{
                         width: dimensions.cols * cellSize,
                         height: dimensions.rows * cellSize,
@@ -125,7 +125,7 @@ export function LayoutBuilder() {
                                 const newY = Math.max(0, Math.min(aisle.y + deltaYGrid, dimensions.rows - aisle.height));
                                 updateAislePosition(aisle.id, newX, newY);
                             }}
-                            className="absolute bg-indigo-500/30 border-2 border-indigo-500 rounded cursor-grab active:cursor-grabbing flex items-center justify-center backdrop-blur-sm"
+                            className="absolute bg-[#D94828]/30 border-2 border-[#D94828] rounded cursor-grab active:cursor-grabbing flex items-center justify-center backdrop-blur-sm"
                             style={{
                                 width: aisle.width * cellSize,
                                 height: aisle.height * cellSize,
@@ -135,7 +135,7 @@ export function LayoutBuilder() {
                             // Need to animate explicitly to snap values perfectly
                             animate={{ x: aisle.x * cellSize, y: aisle.y * cellSize }}
                         >
-                            <span className="font-bold text-indigo-700 dark:text-indigo-300 transform -rotate-90 origin-center whitespace-nowrap">
+                            <span className="font-bold text-[#D94828] dark:text-[#e85a3a] transform -rotate-90 origin-center whitespace-nowrap">
                                 Aisle {aisle.id}
                             </span>
                         </motion.div>

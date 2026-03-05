@@ -10,20 +10,20 @@ import { type Bin as BinType, type BinItem, type WarehouseState, useWarehouseSto
 import { QRCodeCanvas } from "qrcode.react";
 import clsx from "clsx";
 
-// 单行 SKU：数量 + 时钟图标 + 移动到按钮 - 2026-02-27
+// 单行 SKU：数量 + 时钟图标 + 移动到按钮 - 2026-02-27 深色弹窗内高对比度
 function SkuRowWithTime({ sku, quantity, inboundTime, onMove }: { sku: string; quantity: number; inboundTime: string | null; onMove?: () => void }) {
     const [showTime, setShowTime] = useState(false);
-    const timeStr = inboundTime ? new Date(inboundTime).toLocaleString("zh-CN") : "-";
+    const timeStr = inboundTime ? new Date(inboundTime).toLocaleDateString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit" }) : "-";
     return (
-        <div className="bg-white/10 p-3 rounded-xl border border-white/10 flex items-center justify-between gap-3">
-            <span className="font-mono font-bold text-sm flex-1">{sku}</span>
-            <span className="font-bold text-lg text-indigo-300 w-14 text-right">{quantity}</span>
+        <div className="bg-zinc-700/60 p-3 rounded-xl border border-zinc-600 flex items-center justify-between gap-3">
+            <span className="font-mono font-bold text-sm flex-1 text-zinc-100">{sku}</span>
+            <span className="font-bold text-lg text-[#e85a3a] w-14 text-right">{quantity}</span>
             <div className="flex items-center gap-1">
                 {onMove && (
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onMove(); }}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/30 hover:bg-emerald-500/50 text-emerald-300 text-xs font-medium transition-colors"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#D94828] hover:bg-[#b83d22] text-white text-xs font-medium transition-colors cursor-pointer"
                         title="移动到其他托盘"
                     >
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -38,13 +38,13 @@ function SkuRowWithTime({ sku, quantity, inboundTime, onMove }: { sku: string; q
                 >
                     <button
                         type="button"
-                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer transition-colors"
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-zinc-600 hover:bg-zinc-500 cursor-pointer transition-colors"
                         title={timeStr}
                     >
-                        <Clock className="w-4 h-4 text-indigo-400" />
+                        <Clock className="w-4 h-4 text-zinc-300" />
                     </button>
                     {showTime && (
-                        <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10 shadow-lg">
+                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 bg-zinc-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10 shadow-lg border border-zinc-600">
                             {timeStr}
                         </span>
                     )}
@@ -119,7 +119,7 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
         setEditItems(updated);
     };
 
-    const formattedId = `${bin.col}-${bin.row}-${String.fromCharCode(64 + bin.layer)}`;
+    const formattedId = `${bin.col}-${bin.row}-${String.fromCharCode(64 + bin.rack)}`;
 
     return (
         <>
@@ -127,19 +127,19 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
                 layout
                 className={clsx(
                     "relative w-full h-full min-h-[40px] rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-colors shadow-sm",
-                    isSelected ? "bg-indigo-500/30 border-indigo-500 shadow-indigo-500/20 shadow-lg"
-                        : hasItems ? "bg-indigo-600 border-indigo-700 shadow-md hover:bg-indigo-500"
-                            : "bg-slate-50 dark:bg-slate-800/50 border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-400"
+                    isSelected ? "bg-[#D94828]/30 border-[#D94828] shadow-[#D94828]/20 shadow-lg"
+                        : hasItems ? "bg-[#D94828] border-[#b83d22] shadow-md hover:bg-[#b83d22]"
+                            : "bg-zinc-50 dark:bg-zinc-800/50 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-[#D94828]"
                 )}
             >
                 <span className={clsx(
                     "text-[10px] font-mono font-bold px-0.5 text-center leading-tight",
-                    hasItems ? "text-white" : "text-slate-400"
+                    hasItems ? "text-white" : "text-zinc-400"
                 )}>
                     {formattedId.split('-').slice(1).join('-')}
                 </span>
                 {items.length > 1 && (
-                    <span className="text-[8px] text-indigo-200 font-mono">{items.length} SKU</span>
+                    <span className="text-[8px] text-white/80 font-mono">{items.length} SKU</span>
                 )}
             </motion.div>
 
@@ -158,16 +158,16 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
                                 animate={{ scale: 1, y: 0 }}
                                 exit={{ scale: 0.95, y: 20 }}
                                 onClick={e => e.stopPropagation()}
-                                className="glass relative w-full max-w-md rounded-2xl overflow-hidden p-6 text-slate-900 dark:text-white max-h-[85vh] overflow-y-auto"
+                                className="relative w-full max-w-md rounded-2xl overflow-hidden p-6 bg-zinc-800 border border-zinc-700 shadow-2xl max-h-[85vh] overflow-y-auto text-zinc-100"
                             >
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-2xl font-bold font-mono text-indigo-400">{formattedId}</h3>
+                                    <h3 className="text-2xl font-bold font-mono text-[#D94828]">{formattedId}</h3>
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => setShowQr(!showQr)}
                                             className={clsx(
                                                 "p-2 rounded-lg transition-colors",
-                                                showQr ? "bg-indigo-500 text-white" : "bg-white/10 text-slate-400 hover:text-white"
+                                                showQr ? "bg-[#D94828] text-white" : "bg-zinc-600/80 text-zinc-200 hover:bg-zinc-600 hover:text-white"
                                             )}
                                             title="View QR Label"
                                         >
@@ -176,7 +176,7 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
                                         {!isEditing ? (
                                             <button
                                                 onClick={startEditing}
-                                                className="p-2 bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                                className="p-2 bg-zinc-600/80 rounded-lg text-zinc-200 hover:bg-zinc-600 hover:text-white transition-colors cursor-pointer"
                                             >
                                                 <Edit2 className="w-5 h-5" />
                                             </button>
@@ -193,13 +193,13 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
                                     </div>
                                 </div>
 
-                                <p className="opacity-70 text-sm mb-4 font-mono">System ID: {bin.id}</p>
+                                <p className="text-zinc-400 text-sm mb-4 font-mono">System ID: {bin.id}</p>
 
                                 {showQr && (
                                     <motion.div
                                         initial={{ height: 0, opacity: 0 }}
                                         animate={{ height: "auto", opacity: 1 }}
-                                        className="mb-4 bg-white p-4 rounded-xl flex flex-col items-center justify-center space-y-2 dark:bg-white"
+                                        className="mb-4 bg-white p-4 rounded-xl flex flex-col items-center justify-center space-y-2"
                                     >
                                         <QRCodeCanvas value={formattedId} size={150} />
                                         <span className="text-black text-xs font-mono font-bold">{formattedId}</span>
@@ -207,27 +207,27 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
                                 )}
 
                                 {/* 总数量 */}
-                                <div className="bg-white/10 p-3 rounded-xl border border-white/10 flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-2 opacity-80 text-sm">
+                                <div className="bg-zinc-700/60 p-3 rounded-xl border border-zinc-600 flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2 text-zinc-300 text-sm">
                                         <Hash className="w-4 h-4" />
                                         <span>Total Qty</span>
                                     </div>
-                                    <span className="font-bold text-2xl">{isEditing ? editItems.reduce((s, i) => s + i.quantity, 0) : totalQty}</span>
+                                    <span className="font-bold text-2xl text-white">{isEditing ? editItems.reduce((s, i) => s + i.quantity, 0) : totalQty}</span>
                                 </div>
 
                                 {/* 托盘上所有货物：SKU、数量、入库时间（时钟+悬停/点击显示）- 2026-02-27T08:40:00Z */}
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between mb-1">
-                                        <div className="flex items-center gap-2 opacity-80 text-sm">
+                                        <div className="flex items-center gap-2 text-zinc-300 text-sm">
                                             <Package className="w-4 h-4" />
                                             <span>SKU 列表 ({isEditing ? editItems.length : items.length})</span>
                                         </div>
                                         {isEditing && (
                                             <div className="flex gap-2">
-                                                <button onClick={addItem} className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+                                                <button onClick={addItem} className="flex items-center gap-1 text-xs text-[#D94828] hover:text-[#b83d22] transition-colors cursor-pointer">
                                                     <Plus className="w-3 h-3" /> Add SKU
                                                 </button>
-                                                <button onClick={() => setShowPhotoOcr(!showPhotoOcr)} className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+                                                <button onClick={() => setShowPhotoOcr(!showPhotoOcr)} className="flex items-center gap-1 text-xs text-[#D94828] hover:text-[#b83d22] transition-colors cursor-pointer">
                                                     <Camera className="w-3 h-3" /> 拍照识别
                                                 </button>
                                             </div>
@@ -247,19 +247,19 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
 
                                     {isEditing ? (
                                         editItems.map((item, idx) => (
-                                            <div key={idx} className="bg-white/10 p-3 rounded-xl border border-white/10 flex items-center gap-2">
+                                            <div key={idx} className="bg-zinc-700/60 p-3 rounded-xl border border-zinc-600 flex items-center gap-2">
                                                 <input
                                                     type="text"
                                                     value={item.sku}
                                                     onChange={e => updateItem(idx, "sku", String((e.target as { value?: string }).value ?? ""))}
-                                                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-white font-mono text-sm focus:outline-none focus:border-indigo-500"
+                                                    className="flex-1 bg-zinc-600 border border-zinc-500 rounded-lg px-2 py-1.5 text-white font-mono text-sm focus:outline-none focus:border-[#D94828]"
                                                     placeholder="SKU..."
                                                 />
                                                 <input
                                                     type="number"
                                                     value={item.quantity}
                                                     onChange={e => updateItem(idx, "quantity", Number((e.target as { value?: string }).value) || 0)}
-                                                    className="w-20 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-white font-bold text-center focus:outline-none focus:border-indigo-500"
+                                                    className="w-20 bg-zinc-600 border border-zinc-500 rounded-lg px-2 py-1.5 text-white font-bold text-center focus:outline-none focus:border-[#D94828]"
                                                 />
                                                 <button onClick={() => removeItem(idx)} className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors">
                                                     <Trash2 className="w-4 h-4" />
@@ -279,7 +279,7 @@ export function Bin({ bin, showModal: externalShowModal, onCloseModal }: BinProp
                                                 }}
                                             />
                                         )) : (
-                                            <div className="bg-white/5 p-4 rounded-xl border border-white/5 text-center text-slate-500 italic">
+                                            <div className="bg-zinc-700/40 p-4 rounded-xl border border-zinc-600 text-center text-zinc-400 italic">
                                                 Empty Bin
                                             </div>
                                         )

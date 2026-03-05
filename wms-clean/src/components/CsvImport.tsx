@@ -61,19 +61,19 @@ export function CsvImport() {
         <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-500/20 rounded-lg">
-                        <Upload className="w-5 h-5 text-indigo-400" />
+                    <div className="p-2 bg-[#D94828]/20 rounded-lg">
+                        <Upload className="w-5 h-5 text-[#D94828]" />
                     </div>
                     <div>
                         <h3 className="font-semibold text-white">Lingxing CSV Import</h3>
-                        <p className="text-xs text-slate-400">Update inventory in bulk</p>
+                        <p className="text-xs text-zinc-400">Update inventory in bulk</p>
                     </div>
                 </div>
 
                 <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
-                    className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-700 text-white rounded-xl text-sm font-medium transition-all flex items-center gap-2"
+                    className="px-4 py-2 bg-[#D94828] hover:bg-[#b83d22] disabled:bg-zinc-700 text-white rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2 cursor-pointer"
                 >
                     {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                     Select File
@@ -95,20 +95,20 @@ export function CsvImport() {
             )}
 
             {result && (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex flex-col gap-2">
-                    <div className="flex items-center gap-3 text-emerald-400 text-sm">
+                <div className="bg-[#D94828]/10 border border-[#D94828]/20 rounded-xl p-3 flex flex-col gap-2">
+                    <div className="flex items-center gap-3 text-[#D94828] text-sm">
                         <Check className="w-4 h-4 shrink-0" />
                         <span>Success: {result.updated} bins updated. {result.errors > 0 && `${result.errors} skipped.`}</span>
                     </div>
                     {result.details.length > 0 && (
-                        <div className="text-[10px] text-slate-500 font-mono mt-1 max-h-20 overflow-y-auto">
+                        <div className="text-[10px] text-zinc-500 font-mono mt-1 max-h-20 overflow-y-auto">
                             {result.details.map((d, i) => <div key={i}>{d}</div>)}
                         </div>
                     )}
                 </div>
             )}
 
-            <div className="text-[10px] text-slate-500">
+            <div className="text-[10px] text-zinc-500">
                 Supported headers: SKU, Quantity (可用库存), Bin (库位)
             </div>
         </div>

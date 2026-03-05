@@ -14,7 +14,7 @@ export async function POST() {
                         id: `${col}-L${l}-R${r}`,
                         col,
                         row: r,
-                        layer: l,
+                        rack: l,
                         sku: hasItem ? `SKU-A${Math.floor(Math.random() * 900) + 100}` : null,
                         quantity: hasItem ? Math.floor(Math.random() * 50) + 1 : 0,
                         inboundTime: hasItem ? new Date() : null,

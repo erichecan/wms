@@ -29,12 +29,12 @@ export async function POST(request: Request) {
         const items = JSON.stringify(updates.items ?? []);
         const parts = String(id || "").match(/^([A-Za-z0-9]+)-L(\d+)-R(\d+)$/);
         const col = updates.col ?? parts?.[1] ?? "K1";
-        const layer = updates.layer ?? (parts?.[2] ? parseInt(parts[2], 10) : 1);
+        const rack = updates.rack ?? (parts?.[2] ? parseInt(parts[2], 10) : 1);
         const row = updates.row ?? (parts?.[3] ? parseInt(parts[3], 10) : 1);
 
         const bin = await sql`
-            INSERT INTO "Bin" (id, col, "row", layer, sku, quantity, items, "inboundTime", "updatedAt")
-            VALUES (${id}, ${col}, ${row}, ${layer}, ${sku}, ${quantity}, ${items}::jsonb, NOW(), NOW())
+            INSERT INTO "Bin" (id, col, "row", rack, sku, quantity, items, "inboundTime", "updatedAt")
+            VALUES (${id}, ${col}, ${row}, ${rack}, ${sku}, ${quantity}, ${items}::jsonb, NOW(), NOW())
             ON CONFLICT (id) DO UPDATE SET
                 sku = ${sku},
                 quantity = ${quantity},

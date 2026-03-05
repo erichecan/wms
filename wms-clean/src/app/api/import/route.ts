@@ -43,13 +43,13 @@ export async function POST(request: Request) {
             const aisleId = binParts[0] || "Unknown";
             const row = parseInt(binParts[1] || "1");
             const levelChar = binParts[2] || "A";
-            const layer = levelChar.toUpperCase().charCodeAt(0) - 64;
+            const rack = levelChar.toUpperCase().charCodeAt(0) - 64;
 
             try {
                 await prisma.bin.upsert({
                     where: { id: binId },
-                    update: { sku, quantity: qty, col: aisleId, row, layer },
-                    create: { id: binId, sku, quantity: qty, col: aisleId, row, layer, inboundTime: new Date() }
+                    update: { sku, quantity: qty, col: aisleId, row, rack },
+                    create: { id: binId, sku, quantity: qty, col: aisleId, row, rack, inboundTime: new Date() }
                 });
                 results.updated++;
             } catch (err) {

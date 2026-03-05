@@ -1,21 +1,34 @@
 @import "tailwindcss";
 
+/* 2026-02-27 Apony Group 配色：红橙 #D94828 主色、黑 #000、灰 #333、白底 */
 @theme {
-    --color-brand-100: #e0e7ff;
-    --color-brand-500: #6366f1;
-    --color-brand-900: #312e81;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --color-aponyt-red: #D94828;
+    --color-aponyt-black: #000000;
+    --color-aponyt-grey: #333333;
+    --color-aponyt-white: #ffffff;
+    --color-aponyt-red-light: #fef2f0;
+    --color-aponyt-red-dark: #b83d22;
 }
 
 @layer base {
     :root {
-        --background: #f8fafc;
-        --foreground: #0f172a;
+        --background: #ffffff;
+        --foreground: #000000;
+        --foreground-muted: #333333;
+        --accent: #D94828;
+        --accent-hover: #b83d22;
+        --border: #e5e7eb;
     }
 
     @media (prefers-color-scheme: dark) {
         :root {
-            --background: #0f172a;
-            --foreground: #f8fafc;
+            --background: #0a0a0a;
+            --foreground: #f5f5f5;
+            --foreground-muted: #a3a3a3;
+            --accent: #e85a3a;
+            --accent-hover: #f07a5c;
+            --border: #262626;
         }
     }
 }
@@ -23,22 +36,22 @@
 body {
     color: var(--foreground);
     background: var(--background);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
 }
 
-/* Glassmorphism utilities */
+/* ui-ux-pro-max: 玻璃卡片在浅色模式下使用较高不透明度 */
 .glass {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .dark .glass {
-    background: rgba(0, 0, 0, 0.25);
+    background: rgba(26, 26, 26, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 /* Custom Scrollbars for Layout Matrix */
@@ -56,7 +69,7 @@ body {
     background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #334155;
+    background-color: #52525b;
     border-radius: 20px;
 }
 /* For cache bust testing */

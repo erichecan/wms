@@ -40,14 +40,14 @@ export default function AisleQrcodesPage() {
                 <div className="flex items-center justify-between mb-6 print:hidden">
                     <Link
                         href="/"
-                        className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                        className="flex items-center gap-2 text-zinc-500 hover:text-[#D94828] transition-colors cursor-pointer"
                     >
                         <ArrowLeft className="w-5 h-5" />
                         返回首页
                     </Link>
                     <button
                         onClick={handlePrint}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#D94828] text-white hover:bg-[#b83d22] transition-colors duration-200 cursor-pointer"
                     >
                         <Printer className="w-5 h-5" />
                         打印二维码
@@ -55,10 +55,10 @@ export default function AisleQrcodesPage() {
                 </div>
 
                 <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
-                    <QrCode className="w-8 h-8 text-indigo-400" />
+                    <QrCode className="w-8 h-8 text-[#D94828]" />
                     通道二维码
                 </h1>
-                <p className="text-slate-500 dark:text-slate-400 mb-8">
+                <p className="text-zinc-500 dark:text-zinc-400 mb-8">
                     扫码可跳转到对应通道页面。打印后张贴于各通道入口。
                 </p>
 
@@ -68,13 +68,13 @@ export default function AisleQrcodesPage() {
                         return (
                             <div
                                 key={aisleId}
-                                className="flex flex-col items-center p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 print:border print:rounded-lg"
+                                className="flex flex-col items-center p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/80 print:border print:rounded-lg"
                             >
                                 <div className="bg-white p-3 rounded-lg mb-3 print:p-2">
                                     <QRCodeCanvas value={url} size={120} level="M" />
                                 </div>
                                 <span className="font-mono font-bold text-lg">{aisleId}</span>
-                                <span className="text-xs text-slate-500 mt-1 break-all text-center">{url}</span>
+                                <span className="text-xs text-zinc-500 mt-1 break-all text-center">{url}</span>
                             </div>
                         );
                     })}

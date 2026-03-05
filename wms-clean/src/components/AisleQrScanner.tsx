@@ -73,19 +73,19 @@ export function AisleQrScanner({ onClose, onScan }: AisleQrScannerProps) {
                     <h3 className="text-lg font-bold text-white">扫描通道二维码</h3>
                     <button
                         onClick={onClose}
-                        className="p-2 text-slate-400 hover:text-white rounded-lg transition-colors"
+                        className="p-2 text-zinc-400 hover:text-white rounded-lg transition-colors cursor-pointer"
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
                 <div
                     id="qr-reader"
-                    className="rounded-xl overflow-hidden bg-slate-900"
+                    className="rounded-xl overflow-hidden bg-zinc-900"
                 />
                 {error && (
                     <p className="text-sm text-red-400">{error}</p>
                 )}
-                <p className="text-xs text-slate-500 text-center">
+                <p className="text-xs text-zinc-500 text-center">
                     支持通道码（如 K1）、Bin 码（如 K1-2-A）或带 /aisle/ 的链接
                 </p>
             </div>
